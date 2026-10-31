@@ -18,7 +18,10 @@ const server = http.createServer(async (req, res) => {
     else if (data.action === 'saveResult') {
       await new Promise(resolve => setTimeout(resolve, 1800));
       output = { success: data.username !== 'qa-fail' };
-    } else if (data.action === 'list') output = { success: true, data: [] };
+    } else if (data.action === 'list') output = { success: true, data: [
+      { time: '31/10/2026 12:00', user: 'QA_READY', pass: 'TEST123', status: 'Ready' },
+      { time: '31/10/2026 11:00', user: 'QA_USED', pass: 'TEST456', status: 'Used' }
+    ] };
     else output = { success: false, message: 'Local QA does not create real tokens' };
     res.writeHead(200, { 'Content-Type': types['.json'] }); res.end(JSON.stringify(output)); return;
   }

@@ -1,5 +1,41 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGdQbzLyHeEFN-RhSxG3201rYFppvb7fvRCBjjD3CPGYonUPA/exec'; 
 
+    // Local, inline vector icons also render in exported images without a CDN.
+    const ICON_PATHS = {
+        sparkles: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/><path d="M20 2v4M18 4h4"/>',
+        shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/>',
+        'log-out': '<path d="M10 4H5v16h5M14 8l4 4-4 4M9 12h12"/>',
+        'log-in': '<path d="M14 4h5v16h-5M10 8l4 4-4 4M3 12h11"/>',
+        key: '<circle cx="8" cy="8" r="4"/><path d="m11 11 9 9M16 16l2-2M18 18l2-2"/>',
+        list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+        book: '<path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/>',
+        lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
+        cards: '<rect x="8" y="4" width="12" height="17" rx="2"/><path d="M5 17H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h10M14 9v6M11 12h6"/>',
+        refresh: '<path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/>',
+        message: '<path d="M20 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3Z"/><path d="M7 8h9M7 12h6"/>',
+        download: '<path d="M12 3v12M7 10l5 5 5-5M4 16v5h16v-5"/>',
+        eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+        'eye-off': '<path d="m3 3 18 18M10 5c7-1 12 7 12 7s-1 3-4 5M6 6c-3 2-4 6-4 6s4 7 10 7c2 0 3 0 4-1M10 10a3 3 0 0 0 4 4"/>',
+        shuffle: '<path d="M3 5h3l12 14h3M17 15l4 4-4 4M3 19h3l4-5M14 9l4-4h3M17 1l4 4-4 4"/>',
+        check: '<path d="m5 12 4 4L19 6"/>',
+        plus: '<path d="M12 5v14M5 12h14"/>',
+        'arrow-right': '<path d="M4 12h16M14 6l6 6-6 6"/>',
+        'arrow-left': '<path d="M20 12H4M10 6l-6 6 6 6"/>',
+        copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
+        star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
+        alert: '<path d="m12 3 10 18H2Z"/><path d="M12 9v5M12 17h.01"/>',
+        loader: '<path d="M20 12a8 8 0 1 1-8-8"/>',
+        link: '<path d="m10 14 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M16 8l1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 0) scale(.9)"/>'
+    };
+
+    function iconMarkup(name) {
+        return `<svg class="icon${name === 'loader' ? ' icon-spin' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICON_PATHS[name] || ''}</svg>`;
+    }
+
+    function setButtonContents(button, name, label) {
+        button.innerHTML = `${iconMarkup(name)}<span>${escapeHTML(label)}</span>`;
+    }
+
     let currentUser = ""; let currentPass = ""; let loginUserGlobal = "";
     let sessionRole = 'client';
 
@@ -75,9 +111,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         if (!u || !p) { errLabel.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ'; return; }
         loginInProgress = true;
         const button = document.getElementById('login-submit');
-        button.disabled = true; button.textContent = 'กำลังตรวจสอบรหัส…'; errLabel.textContent = '';
+        button.disabled = true; setButtonContents(button, 'loader', 'กำลังตรวจสอบรหัส…'); errLabel.textContent = '';
         const res = await callAPI({ action: 'login', username: u, password: p });
-        loginInProgress = false; button.disabled = false; button.textContent = 'เข้าสู่ระบบ';
+        loginInProgress = false; button.disabled = false; setButtonContents(button, 'log-in', 'เข้าสู่ระบบ');
         if (res.success) {
             sessionRole = res.role === 'admin' ? 'admin' : 'client';
             document.getElementById('login-view').style.display = 'none'; loginUserGlobal = u;
@@ -105,22 +141,22 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         const res = await callAPI(payload);
         const msg = document.getElementById('admin-msg');
         if(res.success) {
-            msg.style.color = "#27ae60"; msg.innerText = `✅ สร้างรหัสสำเร็จ! User: ${res.username} / Pass: ${res.password}`;
+            msg.className = 'feedback-message success'; msg.innerText = `สร้างรหัสสำเร็จ — ชื่อผู้ใช้: ${res.username} / รหัสผ่าน: ${res.password}`;
             document.getElementById('custom-u').value = ""; document.getElementById('custom-p').value = "";
             fetchTokenList(); 
         } else {
-            msg.style.color = "#e74c3c"; msg.innerText = `❌ ผิดพลาด: ${res.message}`;
+            msg.className = 'feedback-message error'; msg.innerText = `สร้างรหัสไม่สำเร็จ: ${res.message}`;
         }
     }
 
     async function fetchTokenList() {
         const res = await callAPI({ action: "list", adminUser: currentUser, adminPass: currentPass });
         if(res.success) {
-            let html = `<table><tr><th>วันที่สร้าง</th><th>Username</th><th>Password</th><th>สถานะ</th></tr>`;
+            let html = `<table><tr><th>วันที่สร้าง</th><th>ชื่อผู้ใช้</th><th>รหัสผ่าน</th><th>สถานะ</th></tr>`;
             res.data.forEach(r => {
                 let statusClass = r.status === "Ready" ? "status-ready" : "status-used";
-                let statusText = r.status === "Ready" ? "✅ พร้อมใช้" : "❌ ใช้แล้ว";
-                html += `<tr><td>${r.time}</td><td>${r.user}</td><td>${r.pass}</td><td class="${statusClass}">${statusText}</td></tr>`;
+                let statusText = r.status === "Ready" ? "พร้อมใช้" : "ใช้แล้ว";
+                html += `<tr><td>${escapeHTML(r.time)}</td><td>${escapeHTML(r.user)}</td><td>${escapeHTML(r.pass)}</td><td><span class="${statusClass}">${statusText}</span></td></tr>`;
             });
             html += `</table>`;
             document.getElementById('table-container').innerHTML = html;
@@ -306,8 +342,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     function toggleNumbers() {
         isNumbersVisible = !isNumbersVisible;
         const board = document.getElementById('card-board'); const btnToggle = document.getElementById('btn-toggle-num');
-        if (isNumbersVisible) { board.classList.remove('hide-numbers'); btnToggle.innerHTML = "👁️ ปิดตำแหน่งไพ่"; btnToggle.style.background = "#e67e22"; } 
-        else { board.classList.add('hide-numbers'); btnToggle.innerHTML = "👁️ เปิดตำแหน่งไพ่"; btnToggle.style.background = "#27ae60"; }
+        board.classList.toggle('hide-numbers', !isNumbersVisible);
+        btnToggle.setAttribute('aria-pressed', String(!isNumbersVisible));
+        setButtonContents(btnToggle, isNumbersVisible ? 'eye-off' : 'eye', isNumbersVisible ? 'ซ่อนเลขตำแหน่ง' : 'แสดงเลขตำแหน่ง');
     }
 
     function shuffleAndReset() {
@@ -378,7 +415,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         });
         resArea.style.display = 'block'; renderVisualCards(); setStage('result');
         const saveStatus = document.getElementById('save-status');
-        saveStatus.className = 'save-status'; saveStatus.textContent = 'กำลังบันทึกผล กรุณารอสักครู่และอย่าปิดหน้านี้…';
+        saveStatus.className = 'save-status'; saveStatus.dataset.state = 'pending'; saveStatus.textContent = 'กำลังบันทึกผล กรุณารอสักครู่และอย่าปิดหน้านี้…';
         if (isAdminSession() && !document.getElementById('admin-save-results').checked) saveStatus.textContent = 'กำลังแสดงผลทดสอบ…';
         const followUp = document.getElementById('follow-up-button'); followUp.disabled = true;
         document.getElementById('result-heading').focus();
@@ -388,10 +425,12 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             if (!response.success) throw new Error('Save was not confirmed');
             lastSaveSucceeded = true; followUp.disabled = false;
             saveStatus.className = 'save-status saved';
+            saveStatus.dataset.state = response.preview ? 'preview' : 'success';
             saveStatus.textContent = currentMode === 12 ? 'บันทึกผลสำเร็จ ใช้สิทธิ์เปิดไพ่ 12 ใบแล้ว คุณบันทึกผลและถามต่อแบบ 3 ใบในหน้านี้ได้' : 'บันทึกคำถามและผลไพ่สำเร็จ คุณบันทึกผลหรือถามคำถามถัดไปได้';
             if (isAdminSession()) saveStatus.textContent = response.preview ? 'แสดงผลทดสอบแอดมินแล้ว โดยไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา คุณใช้เครื่องมือทั้งหมดหรือเริ่มไพ่ชุดใหม่ได้' : 'บันทึกผลทดสอบแอดมินสำเร็จ โดยไม่ตัดสิทธิ์เจ้าชะตา คุณถามต่อหรือเริ่มไพ่ชุดใหม่ได้';
         } catch (error) {
             saveStatus.className = 'save-status field-error';
+            saveStatus.dataset.state = 'error';
             saveStatus.textContent = 'ยังยืนยันการบันทึกไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพชุดนี้ แล้วติดต่อหมอวิทยาก่อนเริ่มใหม่ เพื่อป้องกันการใช้สิทธิ์หรือบันทึกซ้ำ';
             if (isAdminSession()) saveStatus.textContent = 'ยังยืนยันการบันทึกผลทดสอบไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพไว้ก่อนเริ่มชุดใหม่';
         } finally { saveInProgress = false; setAdminBusy(false); }
@@ -400,8 +439,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     function filterCards(type, skipDayReset = false) {
         if (!skipDayReset) {
             activeDayMode = null; 
-            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.day-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
         }
+        document.querySelectorAll('.reading-filter').forEach(button => button.setAttribute('aria-pressed', String(!skipDayReset && button.dataset.filter === type)));
         
         const cards = document.querySelectorAll('#card-area .card-item');
         
@@ -422,8 +462,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
     function setDayMode(day, btn) {
         activeDayMode = day;
-        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
+        document.querySelectorAll('.day-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+        if(btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
         
         filterCards('reset', true); 
         activeDayMode = day; 
@@ -493,14 +533,14 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             const month1 = thaiMonths[(currentMonthIndex + 1) % 12];
             const month2 = thaiMonths[(currentMonthIndex + 2) % 12];
             const month3 = thaiMonths[(currentMonthIndex + 3) % 12];
-            displayQuestion.innerHTML = `<span class="spread-title">🌟 ไพ่พรหมญาณ 12 ใบ : พื้นดวงชะตาระยะสั้น (ปัจจุบัน - 3 เดือน)</span><span class="spread-months"><span>${month1}</span> – <span>${month2}</span> – <span>${month3}</span></span>`;
+            displayQuestion.innerHTML = `<span class="spread-title">ไพ่พรหมญาณ 12 ใบ : พื้นดวงชะตาระยะสั้น (ปัจจุบัน - 3 เดือน)</span><span class="spread-months"><span>${month1}</span> – <span>${month2}</span> – <span>${month3}</span></span>`;
         } else {
             questionText = document.getElementById('user-question-3').value.trim();
-            displayQuestion.innerHTML = `❓ <b>คำถาม:</b> ${escapeHTML(questionText || "ดูดวงภาพรวม")}`;
+            displayQuestion.innerHTML = `<b>คำถาม:</b> ${escapeHTML(questionText || "ดูดวงภาพรวม")}`;
         }
 
         let contextHTML = "";
-        if (situationText) { contextHTML += `<p><span class="context-label">📌 สถานการณ์:</span> ${escapeHTML(situationText).replace(/\n/g, '<br>')}</p>`; }
+        if (situationText) { contextHTML += `<p><span class="context-label">สถานการณ์:</span> ${escapeHTML(situationText).replace(/\n/g, '<br>')}</p>`; }
         if (contextHTML !== "") { contextDisplay.innerHTML = contextHTML; contextDisplay.style.display = 'block'; }
 
         if (currentMode === 12) cardArea.className = 'custom-layout-12';
@@ -525,20 +565,22 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             else if (GOOD.includes(strCardId)) { cardClass += " card-good"; } 
             else { cardClass += " card-neutral"; }
 
-            const cardDiv = document.createElement('div');
+            const cardDiv = document.createElement(currentMode === 12 ? 'button' : 'div');
             cardDiv.className = cardClass;
             
             cardDiv.dataset.pos = posPart;
             cardDiv.dataset.id = strCardId;
 
             if (currentMode === 12) {
+                cardDiv.type = 'button';
+                cardDiv.setAttribute('aria-label', `${posPart}: ${CARD_DATA[cardId]}`);
                 cardDiv.classList.add(gridLayoutMap12[index]);
                 cardDiv.onclick = () => handleCardClick(posPart); 
                 cardDiv.style.cursor = 'pointer';
             }
 
             cardDiv.innerHTML = `
-                <div class="link-badge">🔗</div>
+                <div class="link-badge" aria-hidden="true">${iconMarkup('link')}</div>
                 <span class="${labelClass}">${posPart}</span>
                 <img src="${IMAGE_PATH}${cardId}${IMAGE_EXT}" crossorigin="anonymous" alt="ภาพไพ่">
             `;
@@ -551,7 +593,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     async function saveAsImage() {
         const button = document.getElementById('btnSaveImg');
         if (button.disabled) return;
-        button.disabled = true; button.textContent = 'กำลังสร้างภาพ…';
+        button.disabled = true; setButtonContents(button, 'loader', 'กำลังสร้างภาพ…');
         let exportArea;
         try {
             if (typeof html2canvas !== 'function') throw new Error('Image exporter unavailable');
@@ -570,7 +612,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             document.getElementById('copy-status').textContent = 'บันทึกภาพไม่สำเร็จ กรุณาลองอีกครั้ง หรือใช้ปุ่มคัดลอกผลไพ่';
         } finally {
             if (exportArea) exportArea.remove();
-            button.disabled = false; button.textContent = 'บันทึกภาพผลไพ่';
+            button.disabled = false; setButtonContents(button, 'download', 'บันทึกภาพผลไพ่');
         }
     }
 
@@ -590,7 +632,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         const posNames = (currentMode === 3) ? POS_3 : POS_12;
         selectedCards.forEach((id, index) => { textToCopy += `${index + 1}. ${posNames[index] || 'ขยายความ'}: ${id} ${CARD_DATA[id]}\n`; });
         navigator.clipboard.writeText(textToCopy).then(() => { 
-            document.getElementById('copy-status').innerText = "✅ คัดลอกข้อความเรียบร้อยแล้ว!"; 
+            document.getElementById('copy-status').innerText = "คัดลอกผลไพ่เรียบร้อยแล้ว";
             setTimeout(() => { document.getElementById('copy-status').innerText = ""; }, 4000);
         }).catch(() => {
             document.getElementById('copy-status').textContent = 'คัดลอกอัตโนมัติไม่สำเร็จ กรุณาเลือกและคัดลอกข้อความจากรายการไพ่ด้านบน';
@@ -658,3 +700,4 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             event.target.removeAttribute('aria-invalid');
         }
     });
+    document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = iconMarkup(element.dataset.icon); });
