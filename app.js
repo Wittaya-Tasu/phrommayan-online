@@ -446,9 +446,6 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
         let contextHTML = "";
         if (situationText) { contextHTML += `<p><span class="context-label">📌 สถานการณ์:</span> ${escapeHTML(situationText).replace(/\n/g, '<br>')}</p>`; }
-        if (currentMode === 12 && questionText && questionText !== "วิเคราะห์พื้นดวงชะตา") {
-            contextHTML += `<p><span class="context-label">❓ คำถามเพิ่มเติม:</span> <br>${escapeHTML(questionText).replace(/\n/g, '<br>')}</p>`;
-        }
         if (contextHTML !== "") { contextDisplay.innerHTML = contextHTML; contextDisplay.style.display = 'block'; }
 
         if (currentMode === 12) cardArea.className = 'custom-layout-12';

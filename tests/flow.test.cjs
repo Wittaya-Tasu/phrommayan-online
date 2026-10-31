@@ -142,5 +142,6 @@ test('selected topics and custom wording reach both the saved question and full 
   assert.match(requests[0].fullPattern, /หัวข้อ: การเงิน/);
   assert.match(requests[0].question, /อยากทราบแนวโน้มในช่วงสามเดือน/);
   assert.doesNotMatch(requests[0].question, /การงาน/);
-  assert.match(elements.get('user-context-display').innerHTML, /หัวข้อ: การเงิน/);
+  assert.doesNotMatch(elements.get('user-context-display').innerHTML, /หัวข้อ: การเงิน/);
+  assert.equal(elements.get('user-context-display').style.display, 'none');
 });

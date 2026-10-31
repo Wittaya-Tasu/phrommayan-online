@@ -227,6 +227,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .ethics-box ol { font-size: clamp(1.125rem, .95rem + 1vw, 1.7rem); line-height: 1.8; padding-left: 1.5em; }
 .ethics-box li + li { margin-top: .35em; }
 .privacy-notice { font-size: clamp(1.125rem, .95rem + .8vw, 1.5rem); line-height: 1.6; }
+.ethics-box { text-align: center; }
+.ethics-box ol { width: max-content; max-width: 100%; margin-inline: auto; text-align: left; }
+.privacy-notice strong { color: #b4362d; font-weight: 700; }
+.login-title { color: #2980b9; margin-bottom: 20px; }
 #prayer-overlay { padding: clamp(12px, 2vw, 28px); }
 #prayer-overlay .prayer-box { width: 100%; max-width: 980px; padding: clamp(18px, 3vw, 42px); max-height: calc(100dvh - 32px); }
 .prayer-title { font-family: 'Sarabun', sans-serif; font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem); color: #f1d15d; margin: 0 0 22px; line-height: 1.5; }
