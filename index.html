@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เปิดไพ่พรหมญาณ | หมอวิทยา ธรรมนาย</title>
+    
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="loading-overlay" role="status" aria-live="polite">กำลังโหลดข้อมูล... กรุณารอสักครู่ ⏳</div>
+
+<div id="login-view">
+    <div class="login-box">
+        <h2 style="color: #2980b9; margin-bottom: 20px;">🔮 เข้าสู่ระบบเปิดไพ่</h2>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">กรุณากรอก Username และ Password ที่ได้รับจาก หมอวิทยา</p>
+        <form id="login-form"><label for="login-user">ชื่อผู้ใช้</label><input type="text" id="login-user" placeholder="กรอกชื่อผู้ใช้ที่ได้รับ" autocomplete="username" required>
+        <label for="login-pass">รหัสผ่าน</label><input type="password" id="login-pass" placeholder="กรอกรหัสผ่านที่ได้รับ" autocomplete="current-password" required><label class="password-toggle"><input type="checkbox" id="show-password"> แสดงรหัสผ่าน</label>
+        <button class="login-btn" id="login-submit" type="submit">เข้าสู่ระบบ</button></form><p class="help-text">ใช้ชื่อผู้ใช้และรหัสผ่านที่ได้รับจากหมอวิทยา หากยังไม่มีรหัส กรุณาติดต่อหมอวิทยา</p>
+        <p role="alert" id="login-err" style="color: #e74c3c; font-weight: bold; margin-top: 15px;"></p>
+    </div>
+</div>
+
+<div id="admin-view" class="container" style="display:none;">
+    <h2>👑 Admin Dashboard (จัดการรหัสผ่าน)</h2>
+    <button style="background: #e74c3c; float: right; margin-top:-40px;" onclick="logout()">ออกจากระบบ</button>
+    <div class="admin-dashboard">
+        <div class="admin-section">
+            <h3 style="color:#2980b9;">➕ สร้างรหัสให้เจ้าชะตา</h3>
+            <p><b>แบบที่ 1: สร้างให้อัตโนมัติ (สุ่มรหัส)</b></p>
+            <button onclick="generateToken(false)" style="background: #8e44ad;">🎲 กดเพื่อสุ่มรหัสให้ 1 สิทธิ์</button>
+            <p style="margin-top: 20px;"><b>แบบที่ 2: กำหนด Username / Password เอง</b></p>
+            <div class="admin-input-group">
+                <input type="text" id="custom-u" placeholder="พิมพ์ Username ที่ต้องการ">
+                <input type="text" id="custom-p" placeholder="พิมพ์ Password ที่ต้องการ">
+                <button onclick="generateToken(true)" style="background: #27ae60;">สร้างรหัส (กำหนดเอง)</button>
+            </div>
+            <p id="admin-msg" style="color: #d35400; font-weight: bold;"></p>
+        </div>
+        <div class="admin-section">
+            <h3 style="color:#2c3e50;">📋 รายชื่อรหัส 30 รายการล่าสุด</h3>
+            <button onclick="fetchTokenList()" style="background: #34495e; padding: 8px 15px; font-size: 14px;">🔄 อัปเดตตาราง</button>
+            <div id="table-container"></div>
+        </div>
+    </div>
+</div>
+
+<div id="tarot-view" style="display:none;">
+    <div id="prayer-overlay" role="dialog" aria-modal="true" aria-label="คำอธิษฐานก่อนเปิดไพ่">
+        <div class="modal-box">
+            <div style="font-family: 'Kanit', sans-serif; font-size: 1.8em; color: #f1c40f; margin-bottom: 20px;">"คำอธิษฐานก่อนเปิดไพ่"</div>
+            <div class="prayer-text" style="font-size: 1.4em; line-height: 1.8;">
+                ข้าพเจ้า ขอตั้งจิตอธิษฐานถามไพ่พรหมญาณว่า<br>
+                ดวงชะตาของข้าพเจ้าจะเป็นเช่นไรบ้าง<br>
+                หากมีเรื่องใด ที่ข้าพเจ้าควรรับรู้ และ ต้องระมัดระวัง<br>
+                ขอให้ ครูบาอาจารย์ เทพ พรหม สิ่งศักดิ์สิทธิ์และเทวดาที่อยู่ในไพ่<br>
+                โปรดเมตตาบอก มาให้ข้าพเจ้าได้รับรู้ รับทราบ<br>
+                ขอให้ข้าพเจ้าได้คำตอบ ในสิ่งที่อยากรู้ ด้วยเทอญ
+            </div>
+            <button class="btn-gold" style="margin-top:20px;" onclick="acceptPrayer()">ข้าพเจ้าอธิษฐานแล้ว</button>
+        </div>
+    </div>
+
+    <div id="extra-card-popup" role="dialog" aria-modal="true" aria-label="ได้รับไพ่ขยายความเพิ่ม">
+        <div class="modal-box special-box">
+            <div class="special-title">✨ ไพ่พิเศษ!</div>
+            <div class="special-text" id="extra-card-message"></div>
+            <button class="btn-gold" style="background: #d35400; color: white;" onclick="closeExtraPopup()">รับสิทธิ์เลือกไพ่เพิ่ม</button>
+        </div>
+    </div>
+
+    <div class="container" id="tarot-content">
+        <div class="no-print">
+            <h2>🔮 หมอวิทยา ธรรมนาย</h2>
+            <p class="sub-title">พรหมญาณพยากรณ์: ออนไลน์</p>
+            <button style="background: #e74c3c; font-size:12px; float:right; margin-top:-60px;" onclick="logout()">ออกจากระบบ</button>
+            
+            
+            <nav class="journey" aria-label="ขั้นตอนการเปิดไพ่">
+                <ol>
+                    <li data-step="intro" aria-current="step"><span>1</span>เตรียมตัว</li>
+                    <li data-step="details"><span>2</span>ระบุข้อมูล</li>
+                    <li data-step="select"><span>3</span>เลือกและยืนยัน</li>
+                    <li data-step="result"><span>4</span>ดูผลไพ่</li>
+                </ol>
+            </nav>
+            <p id="flow-heading" class="flow-heading" tabindex="-1">เริ่มต้นเปิดไพ่พรหมญาณ 12 ใบ</p>
+            <div id="main-controls">
+                <div class="flow-intro">
+                    <h3>ก่อนเริ่มเปิดไพ่</h3>
+                    <p>ตั้งจิตอธิษฐาน แล้วเลือกไพ่ 12 ใบด้วยตนเอง หรือให้ระบบเลือกให้ คุณตรวจสอบและเปลี่ยนการเลือกได้ก่อนยืนยัน</p>
+                    <p><strong>การใช้สิทธิ์:</strong> เมื่อยืนยันเปิดไพ่ 12 ใบและระบบบันทึกสำเร็จ รหัสนี้จะเปลี่ยนเป็นใช้แล้ว และใช้เข้าสู่ระบบครั้งใหม่ไม่ได้</p>
+                    <p>หลังดูผล คุณถามเจาะลึกด้วยไพ่ 3 ใบต่อในหน้านี้ได้ กรุณาคัดลอกผลหรือบันทึกภาพก่อนปิดหน้า</p>
+                </div>
+                <div class="ethics-box">
+                    <h4>📜 จรรยาบรรณและคุณธรรม ของนักพยากรณ์</h4>
+                    <ol>
+                        <li>ไม่ทำนาย ความเป็นความตายของผู้คน</li>
+                        <li>ไม่ทำนาย ดวงชะตาเด็กน้อย(เด็กทารก - 10 ขวบ)</li>
+                        <li>ไม่ทำนาย ยุยงให้คู่ครอง เลิกลา หย่าร้างกัน</li>
+                        <li>ไม่ทำนาย เพื่อผลประโยชน์หรือแนะนำพิธีกรรมแปลกๆ</li>
+                    </ol>
+                    <p class="privacy-notice">🔒 ข้อมูลและคำพยากรณ์ของเจ้าชะตา <br> จะเป็นความลับไม่ถูกนำไปเปิดเผย</p>
+                </div>
+                <button onclick="startFlow(12)" style="font-family: 'Sarabun', sans-serif; font-weight: 700; font-size: 1.80em; padding: 15px 40px;">เริ่มเปิดไพ่ 12 ใบ</button>
+            </div>
+
+            <div id="card-selection-area" style="display:none;">
+                <div class="user-info-box" id="user-info-12" style="display:none;">
+<h3>มีเรื่องที่อยากเล่าเพิ่มเติมไหม?</h3><p class="help-text">ไม่บังคับกรอก หากต้องการดูภาพรวม กดไปเลือกไพ่ได้เลย</p>
+                    <div id="user-info-content">
+                        <label for="user-context">📌 สถานการณ์ที่กำลังเผชิญอยู่ :</label>
+                        <textarea id="user-context" placeholder="เล่าเรื่องราวคร่าวๆ..."></textarea>
+                        <label for="user-question-12">❓ เรื่องไหนอยากรู้เป็นพิเศษ :</label>
+                        <textarea id="user-question-12" placeholder="เรื่องงาน / เงิน / ความรัก..."></textarea>
+                    </div>
+                </div>
+
+                <div id="question-block" style="display:none;">
+                    <p style="color: #e74c3c; font-size: 1.2em;"><b>⚠️ พิมพ์คำถามเจาะจงที่ท่านต้องการทราบ:</b></p>
+                    <label for="user-question-3" class="sr-only">คำถามเจาะจงที่ต้องการทราบ</label><input type="text" id="user-question-3" placeholder="เช่น งานที่กำลังสมัครมีแนวโน้มอย่างไร" aria-describedby="question-help question-error"><p id="question-help" class="help-text">ระบุครั้งละหนึ่งเรื่อง เพื่อใช้ประกอบการอ่านไพ่</p><p id="question-error" class="field-error" role="alert"></p>
+                </div>
+
+                <div id="details-actions"><button class="primary-action" onclick="continueToSelection()">ไปเลือกไพ่</button></div><div id="selection-tools" style="display:none;"><div class="selection-guide"><h3 id="selection-title">เลือกไพ่ของคุณ</h3><p>แตะไพ่เพื่อเลือก แตะใบเดิมอีกครั้งเพื่อยกเลิก ตัวเลขบนไพ่ที่เลือกคือลำดับการหยิบ</p><p id="selection-count" class="selection-count" role="status" aria-live="polite"></p><div id="selection-progress" class="selection-progress" role="progressbar" aria-label="จำนวนไพ่ที่เลือก" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div id="selection-progress-fill"></div></div></div><div id="status-msg" style="margin-top:15px; font-weight: bold; color: #d35400; font-size: 1.2em;"></div>
+                
+                <div class="action-buttons">
+                    <button onclick="toggleNumbers()" id="btn-toggle-num" style="background:#e67e22; font-size: 14px;">👁️ ปิดตำแหน่งไพ่</button>
+                    <button onclick="shuffleAndReset()" style="background:#34495e; font-size: 14px;">สับไพ่และเลือกใหม่</button>
+                    <button onclick="autoPickCards()" style="background:#8e44ad; font-size: 14px;">ให้ระบบเลือกไพ่ที่เหลือ</button>
+                </div>
+                
+                <div id="card-board" class="grid-container" aria-label="ไพ่คว่ำหน้าสำหรับเลือก"></div><div class="confirm-bar"><p id="confirm-help">เลือกไพ่ให้ครบก่อนยืนยัน</p><button id="confirm-selection" class="primary-action" onclick="showResults()" disabled>ยืนยันการเลือกและเปิดไพ่</button><button class="secondary-action" onclick="backToDetails()">กลับไปแก้ข้อมูล</button></div></div>
+            </div>
+        </div> 
+        
+        <div id="result-area" class="result-section">
+            <div class="no-print">
+                <h3 id="result-heading" tabindex="-1">ผลไพ่ที่คุณเลือก</h3><p id="save-status" class="save-status" role="status" aria-live="polite"></p><p class="help-text">คัดลอกผลหรือบันทึกภาพเก็บไว้ก่อนปิดหน้านี้</p>
+                <div id="selected-list"></div>
+                <div style="margin-top: 20px;">
+                    <button class="btn-copy" onclick="copyResult()" style="background:#2980b9;">คัดลอกผลไพ่</button>
+                    <button id="follow-up-button" class="btn-3cards" onclick="startFlow3Cards()" style="background:#8e44ad;">ถามต่อด้วยไพ่ 3 ใบ</button>
+                    <button id="btnSaveImg" onclick="saveAsImage()" style="background:#27ae60;">บันทึกภาพผลไพ่</button>
+                </div>
+                <p id="copy-status" style="color: #27ae60; font-weight: bold; margin-top: 10px; text-align: center;"></p>
+            </div>
+
+            <div id="capture-area">
+                <div id="result-display">
+                    <div class="section-container">
+                        <div id="master-cards-area" class="master-cards-layout"></div>
+                        <div class="watermark-overlay">© สงวนลิขสิทธิ์ พรหมญาณพยากรณ์ : หมอวิทยา ธรรมนาย</div>
+                    </div>
+                    
+                    <div id="display-question" class="question-box"></div>
+                    <div id="user-context-display" class="user-context-box"></div>
+                    
+                    <!-- 🌟 พื้นที่กระดานไพ่พร้อมเครื่องมือไฮไลท์ 🌟 -->
+                    <div class="card-area-wrapper">
+                        <!-- ปุ่มไฮไลท์ ย้ายเข้ามาในพื้นที่ว่างฝั่งซ้ายของกระดาน 12 ใบ -->
+                        <div id="filter-controls" class="filter-controls no-print" data-html2canvas-ignore="true" style="display:none;">
+                            <div class="filter-group" style="margin-bottom: 5px;">
+                                <button class="btn-icon" onclick="filterCards('good')" title="เน้นไพ่ดี" aria-label="เน้นไพ่ดี">ดี</button>
+                                <button class="btn-icon" onclick="filterCards('bad')" title="เน้นไพ่ควรระวัง" aria-label="เน้นไพ่ควรระวัง">ระวัง</button>
+                                <button class="btn-icon" onclick="filterCards('reset')" title="แสดงไพ่ทั้งหมด" aria-label="แสดงไพ่ทั้งหมด">ทุกใบ</button>
+                            </div>
+                            <p class="help-text">เลือกวันเพื่อดูความสัมพันธ์</p><div class="filter-group">
+                                <button class="btn-icon day-btn" onclick="setDayMode('Sun', this)" title="ไฮไลท์ตามวันอาทิตย์">อา.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Mon', this)" title="ไฮไลท์ตามวันจันทร์">จ.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Tue', this)" title="ไฮไลท์ตามวันอังคาร">อ.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Wed', this)" title="ไฮไลท์ตามวันพุธ">พ.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Thu', this)" title="ไฮไลท์ตามวันพฤหัสบดี">พฤ.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Fri', this)" title="ไฮไลท์ตามวันศุกร์">ศ.</button>
+                                <button class="btn-icon day-btn" onclick="setDayMode('Sat', this)" title="ไฮไลท์ตามวันเสาร์">ส.</button>
+                            </div>
+                        </div>
+
+                        <!-- กระดานไพ่ -->
+                        <div id="card-area"></div>
+                    </div>
+                    
+                    <p style="font-size: 12px; color: #bdc3c7; margin-top: 30px; text-align: center; font-weight: bold;">พรหมญาณพยากรณ์ โดย หมอวิทยา ธรรมนาย</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
