@@ -231,6 +231,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .ethics-box ol { width: max-content; max-width: 100%; margin-inline: auto; text-align: left; }
 .privacy-notice strong { color: #b4362d; font-weight: 700; }
 .login-title { color: #2980b9; margin-bottom: 20px; }
+.admin-toolbar { max-width: 1100px; margin: 20px auto; padding: 18px 22px; border-radius: 14px; background: #fff8e4; color: #4d422a; border: 1px solid #dfcc96; text-align: left; }
+.admin-toolbar[hidden], #admin-reading-options[hidden] { display: none; }
+.admin-toolbar-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.admin-navigation, .admin-reading-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-toolbar button { margin: 0; min-height: 44px; background: #fff; color: #365044; border: 1px solid #b5c5b8; padding: 10px 16px; }
+.admin-navigation button[aria-pressed="true"] { color: #fff; background: #247b50; border-color: #247b50; }
+.admin-reading-actions { margin-top: 18px; }
+.admin-save-option { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-weight: 700; }
+.admin-save-option input { width: 20px; height: 20px; accent-color: #247b50; }
+#admin-navigation-status:empty { display: none; }
 #prayer-overlay { padding: clamp(12px, 2vw, 28px); }
 #prayer-overlay .prayer-box { width: 100%; max-width: 980px; padding: clamp(18px, 3vw, 42px); max-height: calc(100dvh - 32px); }
 .prayer-title { font-family: 'Sarabun', sans-serif; font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem); color: #f1d15d; margin: 0 0 22px; line-height: 1.5; }

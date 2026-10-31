@@ -7,7 +7,7 @@
     
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-    <link rel="stylesheet" href="styles.css?v=20261031-3">
+    <link rel="stylesheet" href="styles.css?v=20261031-4">
 </head>
 <body>
 
@@ -22,6 +22,25 @@
         <p role="alert" id="login-err" style="color: #e74c3c; font-weight: bold; margin-top: 15px;"></p>
     </div>
 </div>
+
+<section id="admin-toolbar" class="admin-toolbar no-print" aria-label="พื้นที่ใช้งานแอดมิน" hidden>
+    <div class="admin-toolbar-heading">
+        <strong>พื้นที่ใช้งานแอดมิน</strong>
+        <nav class="admin-navigation" aria-label="เมนูแอดมิน">
+            <button id="admin-manage-tab" type="button" aria-pressed="true" onclick="showAdminWorkspace('manage')">จัดการรหัส</button>
+            <button id="admin-reading-tab" type="button" aria-pressed="false" onclick="showAdminWorkspace('reading')">เปิดไพ่ / ทดสอบระบบ</button>
+        </nav>
+    </div>
+    <div id="admin-reading-options" hidden>
+        <div class="admin-reading-actions">
+            <button id="admin-new-12" type="button" onclick="startAdminReading(12)">เริ่มเปิดไพ่ 12 ใบใหม่</button>
+            <button id="admin-new-3" type="button" onclick="startAdminReading(3)">เปิดไพ่ 3 ใบ</button>
+        </div>
+        <label class="admin-save-option"><input id="admin-save-results" type="checkbox"> บันทึกผลที่ยืนยันลงชีต</label>
+        <p class="help-text">ปิดตัวเลือกนี้เพื่อทดสอบโดยไม่บันทึก เปิดเมื่อต้องการบันทึกผลทดสอบจริง โดยจะระบุว่าเป็นผลทดสอบแอดมินและไม่ตัดสิทธิ์เจ้าชะตา</p>
+    </div>
+    <p id="admin-navigation-status" class="help-text" role="status" aria-live="polite"></p>
+</section>
 
 <div id="admin-view" class="container" style="display:none;">
     <h2>👑 Admin Dashboard (จัดการรหัสผ่าน)</h2>
@@ -198,6 +217,6 @@
     </div>
 </div>
 
-<script src="app.js?v=20261031-3" defer></script>
+<script src="app.js?v=20261031-4" defer></script>
 </body>
 </html>

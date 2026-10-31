@@ -1,6 +1,53 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGdQbzLyHeEFN-RhSxG3201rYFppvb7fvRCBjjD3CPGYonUPA/exec'; 
 
     let currentUser = ""; let currentPass = ""; let loginUserGlobal = "";
+    let sessionRole = 'client';
+
+    function isAdminSession() { return sessionRole === 'admin'; }
+
+    function showAdminWorkspace(workspace) {
+        if (!isAdminSession()) return;
+        if (saveInProgress) {
+            document.getElementById('admin-navigation-status').textContent = 'กำลังบันทึกผล กรุณารอให้เสร็จก่อนสลับหน้า';
+            return;
+        }
+        const reading = workspace === 'reading';
+        document.getElementById('admin-toolbar').hidden = false;
+        document.getElementById('admin-view').style.display = reading ? 'none' : 'block';
+        document.getElementById('tarot-view').style.display = reading ? 'block' : 'none';
+        document.getElementById('admin-reading-options').hidden = !reading;
+        document.getElementById('admin-manage-tab').setAttribute('aria-pressed', String(!reading));
+        document.getElementById('admin-reading-tab').setAttribute('aria-pressed', String(reading));
+        document.getElementById('admin-navigation-status').textContent = '';
+        if (reading) {
+            setStage(currentStage);
+            document.getElementById(currentStage === 'result' ? 'result-heading' : 'flow-heading').focus();
+        }
+    }
+
+    function setAdminBusy(busy) {
+        if (!isAdminSession()) return;
+        ['admin-manage-tab', 'admin-reading-tab', 'admin-new-12', 'admin-new-3', 'admin-save-results'].forEach(id => {
+            document.getElementById(id).disabled = busy;
+        });
+    }
+
+    function startAdminReading(mode) {
+        if (!isAdminSession() || saveInProgress) return;
+        if ((selectedCards.length || currentStage === 'result') && !confirm('ต้องการเริ่มไพ่ชุดใหม่หรือไม่? กรุณาคัดลอกผลหรือบันทึกภาพชุดปัจจุบันก่อนเริ่มใหม่')) return;
+        showAdminWorkspace('reading');
+        document.getElementById('user-context').value = '';
+        document.getElementById('user-question-12').value = '';
+        document.getElementById('user-question-3').value = '';
+        document.getElementById('question-error').textContent = '';
+        selectedQuestionTopics.clear();
+        document.querySelectorAll('.topic-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
+        if (mode === 12) { startFlow(12); return; }
+        currentMode = 3;
+        document.getElementById('main-controls').style.display = 'none';
+        document.getElementById('card-selection-area').style.display = 'block';
+        resetReading(); backToDetails();
+    }
 
     async function callAPI(payload) {
         document.getElementById('loading-overlay').style.display = 'flex';
@@ -32,11 +79,12 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         const res = await callAPI({ action: 'login', username: u, password: p });
         loginInProgress = false; button.disabled = false; button.textContent = 'เข้าสู่ระบบ';
         if (res.success) {
+            sessionRole = res.role === 'admin' ? 'admin' : 'client';
             document.getElementById('login-view').style.display = 'none'; loginUserGlobal = u;
             document.getElementById('login-pass').value = '';
             if (res.role === 'admin') {
                 currentUser = u; currentPass = p;
-                document.getElementById('admin-view').style.display = 'block'; fetchTokenList();
+                setStage('intro'); showAdminWorkspace('manage'); fetchTokenList();
             } else {
                 document.getElementById('tarot-view').style.display = 'block'; setStage('intro');
                 document.getElementById('flow-heading').focus();
@@ -141,6 +189,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     function setDialog(id, open) {
         document.getElementById(id).style.display = open ? 'flex' : 'none';
         document.getElementById('tarot-content').inert = open;
+        document.getElementById('admin-toolbar').inert = open;
         if (open) document.querySelector(`#${id} button`).focus();
     }
 
@@ -169,6 +218,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         document.getElementById('status-msg').textContent = complete ? 'เลือกครบแล้ว ตรวจสอบลำดับก่อนกดยืนยัน คุณยังแตะไพ่ที่เลือกเพื่อเปลี่ยนได้' : `ใบถัดไป: ${next} — เลือกเพิ่มอีก ${maxAllowed - count} ใบ`;
         document.getElementById('confirm-selection').disabled = !complete || selectionLocked;
         document.getElementById('confirm-help').textContent = currentMode === 12 ? 'เมื่อยืนยัน ระบบจะเปิดผลและบันทึกการใช้สิทธิ์ 12 ใบ' : 'เมื่อยืนยัน ระบบจะเปิดผลและบันทึกคำถามนี้';
+        if (isAdminSession()) document.getElementById('confirm-help').textContent = document.getElementById('admin-save-results').checked ? 'ยืนยันเพื่อเปิดไพ่และบันทึกเป็นผลทดสอบแอดมิน โดยไม่ตัดสิทธิ์เจ้าชะตา' : 'ยืนยันเพื่อเปิดผลทดสอบ โดยไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา';
         document.querySelectorAll('#card-board .card').forEach(card => {
             const index = selectedCards.indexOf(Number(card.dataset.cardId));
             card.classList.toggle('selected', index >= 0);
@@ -208,7 +258,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
     function logout() {
         if (saveInProgress) { alert('กำลังบันทึกผล กรุณารอให้เสร็จก่อนออกจากระบบ'); return; }
-        if ((selectedCards.length || currentStage === 'result') && !confirm('ก่อนออกจากระบบ กรุณาคัดลอกผลหรือบันทึกภาพ หากใช้สิทธิ์ 12 ใบแล้วจะเข้าสู่ระบบใหม่ด้วยรหัสเดิมไม่ได้ ต้องการออกจากระบบหรือไม่?')) return;
+        const message = isAdminSession() ? 'ก่อนออกจากระบบ กรุณาคัดลอกผลหรือบันทึกภาพที่ต้องการเก็บ ต้องการออกจากระบบหรือไม่?' : 'ก่อนออกจากระบบ กรุณาคัดลอกผลหรือบันทึกภาพ หากใช้สิทธิ์ 12 ใบแล้วจะเข้าสู่ระบบใหม่ด้วยรหัสเดิมไม่ได้ ต้องการออกจากระบบหรือไม่?';
+        if ((selectedCards.length || currentStage === 'result') && !confirm(message)) return;
         location.reload();
     } 
 
@@ -313,6 +364,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     async function showResults() {
         if (selectionLocked || currentStage !== 'select' || selectedCards.length !== maxAllowed) return;
         selectionLocked = true; saveInProgress = true; lastSaveSucceeded = false; updateSelection();
+        setAdminBusy(true);
         document.getElementById('card-selection-area').style.display = 'none';
         const resArea = document.getElementById('result-area');
         const list = document.getElementById('selected-list'); list.innerHTML = '';
@@ -327,6 +379,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         resArea.style.display = 'block'; renderVisualCards(); setStage('result');
         const saveStatus = document.getElementById('save-status');
         saveStatus.className = 'save-status'; saveStatus.textContent = 'กำลังบันทึกผล กรุณารอสักครู่และอย่าปิดหน้านี้…';
+        if (isAdminSession() && !document.getElementById('admin-save-results').checked) saveStatus.textContent = 'กำลังแสดงผลทดสอบ…';
         const followUp = document.getElementById('follow-up-button'); followUp.disabled = true;
         document.getElementById('result-heading').focus();
         resArea.scrollIntoView({ behavior: 'smooth' });
@@ -336,10 +389,12 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             lastSaveSucceeded = true; followUp.disabled = false;
             saveStatus.className = 'save-status saved';
             saveStatus.textContent = currentMode === 12 ? 'บันทึกผลสำเร็จ ใช้สิทธิ์เปิดไพ่ 12 ใบแล้ว คุณบันทึกผลและถามต่อแบบ 3 ใบในหน้านี้ได้' : 'บันทึกคำถามและผลไพ่สำเร็จ คุณบันทึกผลหรือถามคำถามถัดไปได้';
+            if (isAdminSession()) saveStatus.textContent = response.preview ? 'แสดงผลทดสอบแอดมินแล้ว โดยไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา คุณใช้เครื่องมือทั้งหมดหรือเริ่มไพ่ชุดใหม่ได้' : 'บันทึกผลทดสอบแอดมินสำเร็จ โดยไม่ตัดสิทธิ์เจ้าชะตา คุณถามต่อหรือเริ่มไพ่ชุดใหม่ได้';
         } catch (error) {
             saveStatus.className = 'save-status field-error';
             saveStatus.textContent = 'ยังยืนยันการบันทึกไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพชุดนี้ แล้วติดต่อหมอวิทยาก่อนเริ่มใหม่ เพื่อป้องกันการใช้สิทธิ์หรือบันทึกซ้ำ';
-        } finally { saveInProgress = false; }
+            if (isAdminSession()) saveStatus.textContent = 'ยังยืนยันการบันทึกผลทดสอบไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพไว้ก่อนเริ่มชุดใหม่';
+        } finally { saveInProgress = false; setAdminBusy(false); }
     }
 
     function filterCards(type, skipDayReset = false) {
@@ -543,7 +598,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     }
 
     async function saveDataToSheet() {
+        if (isAdminSession() && !document.getElementById('admin-save-results').checked) return { success: true, preview: true };
         let typeLabel = (currentMode === 12) ? "12 ใบ" : "3 ใบ";
+        if (isAdminSession()) typeLabel = `ทดสอบแอดมิน ${typeLabel}`;
         let questionData = "";
         
         if (currentMode === 12) {
@@ -578,6 +635,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             action: "saveResult", username: loginUserGlobal, type: typeLabel,
             question: questionData, cards: cardIds, fullPattern: fullPattern
         };
+        if (isAdminSession()) payload.fullPattern = `🧪 ผลทดสอบโดยแอดมิน\n${payload.fullPattern}`;
 
         const response = await fetch(SCRIPT_URL, {
             method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -590,6 +648,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     document.getElementById('login-form').addEventListener('submit', event => { event.preventDefault(); attemptLogin(); });
     document.getElementById('show-password').addEventListener('change', event => {
         document.getElementById('login-pass').type = event.target.checked ? 'text' : 'password';
+    });
+    document.getElementById('admin-save-results').addEventListener('change', () => {
+        if (isAdminSession() && currentStage === 'select') updateSelection();
     });
     document.getElementById('user-question-3').addEventListener('input', event => {
         if (event.target.value.trim()) {
