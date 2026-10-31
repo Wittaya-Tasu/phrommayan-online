@@ -71,6 +71,9 @@ test('deselecting a card updates numbering and allows a replacement', () => {
   run('selectCard(deck[0]); selectCard(deck[1]); selectCard(deck[2]); selectCard(deck[1]);');
   assert.equal(run('selectedCards.length'), 2);
   assert.equal(run('document.getElementById(`client-card-${deck[2]}`).innerHTML'), '2');
+  assert.equal(run('document.getElementById(`client-card-${deck[2]}`).classList.contains("latest-picked")'), true);
+  run('selectCard(deck[2])');
+  assert.equal(run('document.getElementById(`client-card-${deck[0]}`).classList.contains("latest-picked")'), true);
   assert.equal(elements.get('confirm-selection').disabled, true);
   run('autoPickCards()');
   assert.equal(run('new Set(selectedCards).size'), 12);
@@ -128,4 +131,16 @@ test('personal question text is escaped in the visual result', async () => {
   run('autoPickCards()'); await run('showResults()');
   assert.match(elements.get('user-context-display').innerHTML, /&lt;img/);
   assert.doesNotMatch(elements.get('user-context-display').innerHTML, /<img/);
+});
+
+test('selected topics and custom wording reach both the saved question and full result', async () => {
+  const { run, requests, elements } = setup();
+  elements.get('user-question-12').value = 'อยากทราบแนวโน้มในช่วงสามเดือน';
+  run('const topic = document.createElement("button"); topic.dataset.topic = "การเงิน"; toggleQuestionTopic(topic); topic.dataset.topic = "การงาน"; toggleQuestionTopic(topic); toggleQuestionTopic(topic); autoPickCards();');
+  await run('showResults()');
+  assert.match(requests[0].question, /หัวข้อ: การเงิน/);
+  assert.match(requests[0].fullPattern, /หัวข้อ: การเงิน/);
+  assert.match(requests[0].question, /อยากทราบแนวโน้มในช่วงสามเดือน/);
+  assert.doesNotMatch(requests[0].question, /การงาน/);
+  assert.match(elements.get('user-context-display').innerHTML, /หัวข้อ: การเงิน/);
 });

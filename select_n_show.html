@@ -7,7 +7,7 @@
     
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20261031-2">
 </head>
 <body>
 
@@ -50,15 +50,15 @@
 
 <div id="tarot-view" style="display:none;">
     <div id="prayer-overlay" role="dialog" aria-modal="true" aria-label="คำอธิษฐานก่อนเปิดไพ่">
-        <div class="modal-box">
-            <div style="font-family: 'Kanit', sans-serif; font-size: 1.8em; color: #f1c40f; margin-bottom: 20px;">"คำอธิษฐานก่อนเปิดไพ่"</div>
-            <div class="prayer-text" style="font-size: 1.4em; line-height: 1.8;">
-                ข้าพเจ้า ขอตั้งจิตอธิษฐานถามไพ่พรหมญาณว่า<br>
-                ดวงชะตาของข้าพเจ้าจะเป็นเช่นไรบ้าง<br>
-                หากมีเรื่องใด ที่ข้าพเจ้าควรรับรู้ และ ต้องระมัดระวัง<br>
-                ขอให้ ครูบาอาจารย์ เทพ พรหม สิ่งศักดิ์สิทธิ์และเทวดาที่อยู่ในไพ่<br>
-                โปรดเมตตาบอก มาให้ข้าพเจ้าได้รับรู้ รับทราบ<br>
-                ขอให้ข้าพเจ้าได้คำตอบ ในสิ่งที่อยากรู้ ด้วยเทอญ
+        <div class="modal-box prayer-box">
+            <h3 class="prayer-title">คำอธิษฐานก่อนเปิดไพ่</h3>
+            <div class="prayer-text">
+                <p><span>ข้าพเจ้า</span> <span>ขอตั้งจิตอธิษฐาน</span> <span>ถามไพ่พรหมญาณว่า</span></p>
+                <p><span>ดวงชะตาของข้าพเจ้า</span> <span>จะเป็นเช่นไรบ้าง</span></p>
+                <p><span>หากมีเรื่องใด</span> <span>ที่ข้าพเจ้าควรรับรู้</span> <span>และต้องระมัดระวัง</span></p>
+                <p><span>ขอให้ครูบาอาจารย์</span> <span>เทพ พรหม</span> <span>สิ่งศักดิ์สิทธิ์</span> <span>และเทวดาที่อยู่ในไพ่</span></p>
+                <p><span>โปรดเมตตาบอก</span> <span>มาให้ข้าพเจ้าได้รับรู้</span> <span>รับทราบ</span></p>
+                <p><span>ขอให้ข้าพเจ้าได้คำตอบ</span> <span>ในสิ่งที่อยากรู้</span> <span>ด้วยเทอญ</span></p>
             </div>
             <button class="btn-gold" style="margin-top:20px;" onclick="acceptPrayer()">ข้าพเจ้าอธิษฐานแล้ว</button>
         </div>
@@ -89,12 +89,6 @@
             </nav>
             <p id="flow-heading" class="flow-heading" tabindex="-1">เริ่มต้นเปิดไพ่พรหมญาณ 12 ใบ</p>
             <div id="main-controls">
-                <div class="flow-intro">
-                    <h3>ก่อนเริ่มเปิดไพ่</h3>
-                    <p>ตั้งจิตอธิษฐาน แล้วเลือกไพ่ 12 ใบด้วยตนเอง หรือให้ระบบเลือกให้ คุณตรวจสอบและเปลี่ยนการเลือกได้ก่อนยืนยัน</p>
-                    <p><strong>การใช้สิทธิ์:</strong> เมื่อยืนยันเปิดไพ่ 12 ใบและระบบบันทึกสำเร็จ รหัสนี้จะเปลี่ยนเป็นใช้แล้ว และใช้เข้าสู่ระบบครั้งใหม่ไม่ได้</p>
-                    <p>หลังดูผล คุณถามเจาะลึกด้วยไพ่ 3 ใบต่อในหน้านี้ได้ กรุณาคัดลอกผลหรือบันทึกภาพก่อนปิดหน้า</p>
-                </div>
                 <div class="ethics-box">
                     <h4>📜 จรรยาบรรณและคุณธรรม ของนักพยากรณ์</h4>
                     <ol>
@@ -114,8 +108,24 @@
                     <div id="user-info-content">
                         <label for="user-context">📌 สถานการณ์ที่กำลังเผชิญอยู่ :</label>
                         <textarea id="user-context" placeholder="เล่าเรื่องราวคร่าวๆ..."></textarea>
-                        <label for="user-question-12">❓ เรื่องไหนอยากรู้เป็นพิเศษ :</label>
-                        <textarea id="user-question-12" placeholder="เรื่องงาน / เงิน / ความรัก..."></textarea>
+                        <p class="topic-heading" id="topic-heading">❓ เรื่องไหนอยากรู้เป็นพิเศษ :</p>
+                        <p class="help-text" id="topic-help">เลือกได้หลายหัวข้อ แตะหัวข้อเดิมอีกครั้งเพื่อยกเลิก</p>
+                        <div class="question-topics" role="group" aria-labelledby="topic-heading" aria-describedby="topic-help">
+                            <button type="button" class="topic-button" data-topic="ภาพรวมชีวิต" aria-pressed="false" onclick="toggleQuestionTopic(this)">ภาพรวมชีวิต</button>
+                            <button type="button" class="topic-button" data-topic="การงาน" aria-pressed="false" onclick="toggleQuestionTopic(this)">การงาน</button>
+                            <button type="button" class="topic-button" data-topic="การเงิน" aria-pressed="false" onclick="toggleQuestionTopic(this)">การเงิน</button>
+                            <button type="button" class="topic-button" data-topic="ธุรกิจและค้าขาย" aria-pressed="false" onclick="toggleQuestionTopic(this)">ธุรกิจและค้าขาย</button>
+                            <button type="button" class="topic-button" data-topic="ความรักและคู่ครอง" aria-pressed="false" onclick="toggleQuestionTopic(this)">ความรักและคู่ครอง</button>
+                            <button type="button" class="topic-button" data-topic="ครอบครัว" aria-pressed="false" onclick="toggleQuestionTopic(this)">ครอบครัว</button>
+                            <button type="button" class="topic-button" data-topic="บ้านและที่อยู่อาศัย" aria-pressed="false" onclick="toggleQuestionTopic(this)">บ้านและที่อยู่อาศัย</button>
+                            <button type="button" class="topic-button" data-topic="การเรียนและการสอบ" aria-pressed="false" onclick="toggleQuestionTopic(this)">การเรียนและการสอบ</button>
+                            <button type="button" class="topic-button" data-topic="สุขภาพ" aria-pressed="false" onclick="toggleQuestionTopic(this)">สุขภาพ</button>
+                            <button type="button" class="topic-button" data-topic="การเดินทางและย้ายถิ่น" aria-pressed="false" onclick="toggleQuestionTopic(this)">การเดินทางและย้ายถิ่น</button>
+                            <button type="button" class="topic-button" data-topic="โชคลาภ" aria-pressed="false" onclick="toggleQuestionTopic(this)">โชคลาภ</button>
+                            <button type="button" class="topic-button" data-topic="ข้อพิพาทและคดีความ" aria-pressed="false" onclick="toggleQuestionTopic(this)">ข้อพิพาทและคดีความ</button>
+                        </div>
+                        <label for="user-question-12">คำถามเพิ่มเติม (ถ้ามี)</label>
+                        <textarea id="user-question-12" placeholder="พิมพ์รายละเอียดของเรื่องที่อยากรู้เพิ่มเติมได้ที่นี่"></textarea>
                     </div>
                 </div>
 
@@ -124,7 +134,7 @@
                     <label for="user-question-3" class="sr-only">คำถามเจาะจงที่ต้องการทราบ</label><input type="text" id="user-question-3" placeholder="เช่น งานที่กำลังสมัครมีแนวโน้มอย่างไร" aria-describedby="question-help question-error"><p id="question-help" class="help-text">ระบุครั้งละหนึ่งเรื่อง เพื่อใช้ประกอบการอ่านไพ่</p><p id="question-error" class="field-error" role="alert"></p>
                 </div>
 
-                <div id="details-actions"><button class="primary-action" onclick="continueToSelection()">ไปเลือกไพ่</button></div><div id="selection-tools" style="display:none;"><div class="selection-guide"><h3 id="selection-title">เลือกไพ่ของคุณ</h3><p>แตะไพ่เพื่อเลือก แตะใบเดิมอีกครั้งเพื่อยกเลิก ตัวเลขบนไพ่ที่เลือกคือลำดับการหยิบ</p><p id="selection-count" class="selection-count" role="status" aria-live="polite"></p><div id="selection-progress" class="selection-progress" role="progressbar" aria-label="จำนวนไพ่ที่เลือก" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div id="selection-progress-fill"></div></div></div><div id="status-msg" style="margin-top:15px; font-weight: bold; color: #d35400; font-size: 1.2em;"></div>
+                <div id="details-actions"><button class="primary-action" onclick="continueToSelection()">ไปเลือกไพ่</button></div><div id="selection-tools" style="display:none;"><div class="selection-guide"><p class="selection-instructions">แตะไพ่เพื่อเลือก แตะใบเดิมอีกครั้งเพื่อยกเลิก<br>ตัวเลขบนไพ่ที่เลือกคือลำดับการหยิบ</p><p id="selection-count" class="selection-count" role="status" aria-live="polite"></p><div id="selection-progress" class="selection-progress" role="progressbar" aria-label="จำนวนไพ่ที่เลือก" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div id="selection-progress-fill"></div></div></div><div id="status-msg" style="margin-top:15px; font-weight: bold; color: #d35400; font-size: 1.2em;"></div>
                 
                 <div class="action-buttons">
                     <button onclick="toggleNumbers()" id="btn-toggle-num" style="background:#e67e22; font-size: 14px;">👁️ ปิดตำแหน่งไพ่</button>
@@ -163,18 +173,18 @@
                         <!-- ปุ่มไฮไลท์ ย้ายเข้ามาในพื้นที่ว่างฝั่งซ้ายของกระดาน 12 ใบ -->
                         <div id="filter-controls" class="filter-controls no-print" data-html2canvas-ignore="true" style="display:none;">
                             <div class="filter-group" style="margin-bottom: 5px;">
-                                <button class="btn-icon" onclick="filterCards('good')" title="เน้นไพ่ดี" aria-label="เน้นไพ่ดี">ดี</button>
-                                <button class="btn-icon" onclick="filterCards('bad')" title="เน้นไพ่ควรระวัง" aria-label="เน้นไพ่ควรระวัง">ระวัง</button>
-                                <button class="btn-icon" onclick="filterCards('reset')" title="แสดงไพ่ทั้งหมด" aria-label="แสดงไพ่ทั้งหมด">ทุกใบ</button>
+                                <button class="btn-icon" onclick="filterCards('good')" title="เน้นไพ่ดี" aria-label="เน้นไพ่ดี"><span class="filter-symbol" aria-hidden="true">★</span><span>ดี</span></button>
+                                <button class="btn-icon" onclick="filterCards('bad')" title="เน้นไพ่ควรระวัง" aria-label="เน้นไพ่ควรระวัง"><span class="filter-symbol" aria-hidden="true">!</span><span>ระวัง</span></button>
+                                <button class="btn-icon" onclick="filterCards('reset')" title="แสดงไพ่ทั้งหมด" aria-label="แสดงไพ่ทั้งหมด"><span class="filter-symbol" aria-hidden="true">↺</span><span>ทุกใบ</span></button>
                             </div>
                             <p class="help-text">เลือกวันเพื่อดูความสัมพันธ์</p><div class="filter-group">
-                                <button class="btn-icon day-btn" onclick="setDayMode('Sun', this)" title="ไฮไลท์ตามวันอาทิตย์">อา.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Mon', this)" title="ไฮไลท์ตามวันจันทร์">จ.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Tue', this)" title="ไฮไลท์ตามวันอังคาร">อ.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Wed', this)" title="ไฮไลท์ตามวันพุธ">พ.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Thu', this)" title="ไฮไลท์ตามวันพฤหัสบดี">พฤ.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Fri', this)" title="ไฮไลท์ตามวันศุกร์">ศ.</button>
-                                <button class="btn-icon day-btn" onclick="setDayMode('Sat', this)" title="ไฮไลท์ตามวันเสาร์">ส.</button>
+                                <button class="btn-icon day-btn" data-day="Sun" onclick="setDayMode('Sun', this)" title="ไฮไลท์ตามวันอาทิตย์">อา.</button>
+                                <button class="btn-icon day-btn" data-day="Mon" onclick="setDayMode('Mon', this)" title="ไฮไลท์ตามวันจันทร์">จ.</button>
+                                <button class="btn-icon day-btn" data-day="Tue" onclick="setDayMode('Tue', this)" title="ไฮไลท์ตามวันอังคาร">อ.</button>
+                                <button class="btn-icon day-btn" data-day="Wed" onclick="setDayMode('Wed', this)" title="ไฮไลท์ตามวันพุธ">พ.</button>
+                                <button class="btn-icon day-btn" data-day="Thu" onclick="setDayMode('Thu', this)" title="ไฮไลท์ตามวันพฤหัสบดี">พฤ.</button>
+                                <button class="btn-icon day-btn" data-day="Fri" onclick="setDayMode('Fri', this)" title="ไฮไลท์ตามวันศุกร์">ศ.</button>
+                                <button class="btn-icon day-btn" data-day="Sat" onclick="setDayMode('Sat', this)" title="ไฮไลท์ตามวันเสาร์">ส.</button>
                             </div>
                         </div>
 
@@ -189,6 +199,6 @@
     </div>
 </div>
 
-<script src="app.js" defer></script>
+<script src="app.js?v=20261031-2" defer></script>
 </body>
 </html>

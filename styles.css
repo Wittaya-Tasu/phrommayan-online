@@ -219,3 +219,54 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
     .journey li { font-size: .78rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+
+/* Feedback round: clearer reading and controls across screen sizes. */
+#tarot-content.is-intro { max-width: none; }
+.ethics-box { width: 100%; max-width: none; padding: clamp(18px, 2.5vw, 36px); }
+.ethics-box h4 { font-size: clamp(1.35rem, 1rem + 1.2vw, 2rem); line-height: 1.5; margin-bottom: 18px; }
+.ethics-box ol { font-size: clamp(1.125rem, .95rem + 1vw, 1.7rem); line-height: 1.8; padding-left: 1.5em; }
+.ethics-box li + li { margin-top: .35em; }
+.privacy-notice { font-size: clamp(1.125rem, .95rem + .8vw, 1.5rem); line-height: 1.6; }
+#prayer-overlay { padding: clamp(12px, 2vw, 28px); }
+#prayer-overlay .prayer-box { width: 100%; max-width: 980px; padding: clamp(18px, 3vw, 42px); max-height: calc(100dvh - 32px); }
+.prayer-title { font-family: 'Sarabun', sans-serif; font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem); color: #f1d15d; margin: 0 0 22px; line-height: 1.5; }
+#prayer-overlay .prayer-text { font-size: clamp(1.0625rem, .9rem + 1vw, 1.65rem) !important; line-height: 1.75; }
+.prayer-text p { margin: 0 0 .55em; text-wrap: balance; }
+.prayer-text span { display: inline-block; white-space: nowrap; }
+.topic-heading { color: #2c3e50; font-weight: 700; margin: 20px 0 5px; }
+.question-topics { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 18px; }
+.topic-button { margin: 0; min-height: 46px; padding: 10px 18px; color: #28523d; background: #f0f6f2; border: 1px solid #b7cbbd; border-radius: 24px; font-size: 1rem; line-height: 1.5; }
+.topic-button[aria-pressed="true"] { color: #fff; background: #247b50; border-color: #247b50; }
+.selection-guide .selection-instructions { font-size: clamp(1.2rem, 1rem + .7vw, 1.5rem); line-height: 1.7; margin: 0 0 14px; }
+.selection-count { font-size: clamp(1.4rem, 1.1rem + .6vw, 1.7rem); }
+.grid-container .card.selected { font-size: 3.6rem; line-height: 1; letter-spacing: -.04em; }
+.grid-container .card.selected.latest-picked { font-size: 4.2rem; color: #553100; background: linear-gradient(145deg, #f7cf5d, #ffea9b); border-color: #916411; box-shadow: 0 0 0 2px #916411, 0 4px 12px rgba(100, 69, 0, .18); }
+.spread-title, .spread-months { display: block; }
+.spread-months { margin-top: 8px; color: #4a4a4a; }
+.spread-months > span { display: inline-block; white-space: nowrap; }
+.filter-controls .btn-icon { color: #243b45; flex-direction: column; gap: 2px; width: 44px; height: 52px; font-size: .75rem; line-height: 1.2; }
+.filter-symbol { display: block; font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.filter-controls .filter-group { width: 144px; }
+.day-btn::before { content: ''; display: block; width: 11px; height: 11px; border-radius: 50%; background: #bbb; border: 1px solid rgba(0,0,0,.18); }
+.day-btn[data-day="Sun"]::before { background: #d84940; }
+.day-btn[data-day="Mon"]::before { background: #f4d247; }
+.day-btn[data-day="Tue"]::before { background: #ef9b49; }
+.day-btn[data-day="Wed"]::before { background: #50a369; }
+.day-btn[data-day="Thu"]::before { background: #a27650; }
+.day-btn[data-day="Fri"]::before { background: #4c8bcc; }
+.day-btn[data-day="Sat"]::before { background: #9664bc; }
+.result-item { display: grid; grid-template-columns: min(200px, 34%) minmax(0, 1fr); align-items: baseline; gap: 10px; padding: 6px 10px; line-height: 1.4; }
+.result-item .pos-title { width: auto; }
+.result-item .card-highlight { font-family: 'Sarabun', sans-serif; margin-left: 0; }
+#question-block #user-question-3 { font-size: 26.666667px; line-height: 1.5; min-height: 78px; }
+@media (max-width: 1050px) and (min-width: 801px) { .grid-container { grid-template-columns: repeat(7, 1fr); } }
+@media (max-width: 800px) and (min-width: 701px) { .grid-container { grid-template-columns: repeat(6, 1fr); } }
+@media (max-width: 700px) {
+    .filter-controls .filter-group { width: auto; }
+    .result-item { padding: 5px 0; gap: 8px; }
+    .topic-button { padding: 9px 14px; }
+    #tarot-content > .no-print > button[onclick="logout()"] { float: none !important; margin: 0 0 12px auto !important; display: block; }
+}
+@media (max-width: 560px) { .grid-container { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 440px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 360px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }

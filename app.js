@@ -123,6 +123,20 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     let lastSaveSucceeded = false;
     let currentStage = 'intro';
     let loginInProgress = false;
+    const selectedQuestionTopics = new Set();
+
+    function toggleQuestionTopic(button) {
+        const topic = button.dataset.topic;
+        if (selectedQuestionTopics.has(topic)) selectedQuestionTopics.delete(topic);
+        else selectedQuestionTopics.add(topic);
+        button.setAttribute('aria-pressed', String(selectedQuestionTopics.has(topic)));
+    }
+
+    function getQuestion12() {
+        const details = document.getElementById('user-question-12').value.trim();
+        const topics = selectedQuestionTopics.size ? `หัวข้อ: ${Array.from(selectedQuestionTopics).join(', ')}` : '';
+        return [topics, details].filter(Boolean).join('\n');
+    }
 
     function setDialog(id, open) {
         document.getElementById(id).style.display = open ? 'flex' : 'none';
@@ -132,6 +146,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
     function setStage(stage) {
         currentStage = stage;
+        document.getElementById('tarot-content').classList.toggle('is-intro', stage === 'intro');
         const names = { intro: 'เริ่มต้นเปิดไพ่พรหมญาณ 12 ใบ', details: currentMode === 12 ? 'ระบุข้อมูลเพิ่มเติม (ข้ามได้)' : 'ระบุคำถามสำหรับไพ่ 3 ใบ', select: `เลือกไพ่${currentMode === 12 ? ' 12 ใบ' : 'สำหรับคำถามของคุณ'}`, result: 'ผลไพ่ของคุณ' };
         document.getElementById('flow-heading').textContent = names[stage];
         const order = ['intro', 'details', 'select', 'result'];
@@ -157,6 +172,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         document.querySelectorAll('#card-board .card').forEach(card => {
             const index = selectedCards.indexOf(Number(card.dataset.cardId));
             card.classList.toggle('selected', index >= 0);
+            card.classList.toggle('latest-picked', index >= 0 && index === count - 1);
             card.setAttribute('aria-pressed', String(index >= 0));
             card.setAttribute('aria-label', `ไพ่ตำแหน่ง ${card.dataset.originalNumber}${index >= 0 ? ` เลือกเป็นใบที่ ${index + 1} แตะเพื่อยกเลิก` : ' แตะเพื่อเลือก'}`);
             card.disabled = selectionLocked || (complete && index < 0);
@@ -178,7 +194,6 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         document.getElementById('details-actions').style.display = 'none';
         document.getElementById('selection-tools').style.display = 'block';
         document.getElementById('card-board').style.display = 'grid';
-        document.getElementById('selection-title').textContent = currentMode === 12 ? 'เลือกไพ่ 12 ใบ' : 'เลือกไพ่ 3 ใบ และไพ่ขยายความหากได้รับ';
         setStage('select'); updateSelection(); document.getElementById('flow-heading').focus();
     }
 
@@ -416,14 +431,14 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
         if (currentMode === 12) {
             situationText = document.getElementById('user-context').value.trim();
-            questionText = document.getElementById('user-question-12').value.trim();
+            questionText = getQuestion12();
             
             const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             const currentDate = new Date(); const currentMonthIndex = currentDate.getMonth(); 
             const month1 = thaiMonths[(currentMonthIndex + 1) % 12];
             const month2 = thaiMonths[(currentMonthIndex + 2) % 12];
             const month3 = thaiMonths[(currentMonthIndex + 3) % 12];
-            displayQuestion.innerHTML = `🌟 <b>ไพ่พรหมญาณ 12 ใบ : พื้นดวงชะตาระยะสั้น (ปัจจุบัน - 3 เดือน) : <span style="color: #4a4a4a;">${month1} - ${month2} - ${month3}</span></b>`;
+            displayQuestion.innerHTML = `<span class="spread-title">🌟 ไพ่พรหมญาณ 12 ใบ : พื้นดวงชะตาระยะสั้น (ปัจจุบัน - 3 เดือน)</span><span class="spread-months"><span>${month1}</span> – <span>${month2}</span> – <span>${month3}</span></span>`;
         } else {
             questionText = document.getElementById('user-question-3').value.trim();
             displayQuestion.innerHTML = `❓ <b>คำถาม:</b> ${escapeHTML(questionText || "ดูดวงภาพรวม")}`;
@@ -510,7 +525,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     function copyResult() {
         let textToCopy = `🔮 ผลการเลือกไพ่พรหมญาณ\n🔮 รูปแบบ : แบบ ${currentMode} ใบ\n--------------------------\n`;
         if (currentMode === 12) {
-            const contextText = document.getElementById('user-context').value.trim(); const questionText = document.getElementById('user-question-12').value.trim();
+            const contextText = document.getElementById('user-context').value.trim(); const questionText = getQuestion12();
             if (contextText || questionText) {
                 textToCopy += `📝 ข้อมูลจากเจ้าชะตา:\n`;
                 if (contextText) textToCopy += `สถานการณ์: ${contextText}\n`;
@@ -536,7 +551,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         
         if (currentMode === 12) {
             let ctx = document.getElementById('user-context')?.value.trim() || "";
-            let q12 = document.getElementById('user-question-12')?.value.trim() || "";
+            let q12 = getQuestion12();
             questionData = `สถานการณ์: ${ctx} | คำถาม: ${q12 || 'วิเคราะห์พื้นดวงชะตา'}`;
         } else {
             questionData = document.getElementById('user-question-3')?.value.trim() || "";
@@ -546,7 +561,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         
         if (currentMode === 12) {
             const ctxText = document.getElementById('user-context').value.trim();
-            const q12Text = document.getElementById('user-question-12').value.trim();
+            const q12Text = getQuestion12();
             if (ctxText || q12Text) {
                 fullPattern += `📝 ข้อมูลจากเจ้าชะตา:\n`;
                 if (ctxText) fullPattern += `สถานการณ์: ${ctxText}\n`;
