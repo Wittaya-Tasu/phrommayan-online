@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 
-function setup(saveResponse = { success: true }, loginRole = 'client', initializeSelection = true) {
+function setup(saveResponse = { success: true }, loginRole = 'owner', initializeSelection = true) {
   const elements = new Map();
   class Element {
     constructor() {
@@ -31,6 +31,7 @@ function setup(saveResponse = { success: true }, loginRole = 'client', initializ
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const [, id] of html.matchAll(/id="([^"]+)"/g)) elements.set(id, new Element());
   const document = {
+    addEventListener() {},
     getElementById: id => { assert.ok(elements.has(id), `Element exists: ${id}`); return elements.get(id); },
     createElement: () => new Element(),
     querySelectorAll: selector => {
@@ -41,14 +42,14 @@ function setup(saveResponse = { success: true }, loginRole = 'client', initializ
     querySelector: selector => selector.includes('card:not') ? elements.get('card-board').children.find(card => !card.classList.contains('selected')) : new Element()
   };
   const requests = [];
-  const context = vm.createContext({ document, console, Math, Date, String, Number, Promise, Array, setTimeout, alert() {}, confirm: () => true, window: { scrollTo() {} }, location: { reload() {} }, navigator: {}, fetch: async (url, options) => {
+  const context = vm.createContext({ document, console, Math, Date, String, Number, Promise, Array, setTimeout, alert() {}, confirm: () => true, window: { scrollTo() {} }, location: { reload() {} }, navigator: {}, crypto: require('node:crypto').webcrypto, fetch: async (url, options) => {
     const payload = JSON.parse(options.body); requests.push(payload);
-    const response = payload.action === 'login' ? { success: true, role: loginRole } : payload.action === 'list' ? { success: true, data: [] } : saveResponse;
+    const response = payload.action === 'login' ? { success: true, role: loginRole, username: payload.username, sessionToken: 'qa-token' } : payload.action === 'updateAccount' ? { success: true, username: payload.username, sessionToken: 'qa-new-token' } : saveResponse;
     return { ok: true, json: async () => response };
   } });
   vm.runInContext(fs.readFileSync(path.join(root, 'app.js'), 'utf8'), context);
   const run = code => vm.runInContext(code, context);
-  if (initializeSelection) run('acceptPrayer(); continueToSelection();');
+  if (initializeSelection) run("sessionToken = 'qa-token'; loginUserGlobal = 'qa-owner'; startReading(12, false); continueToSelection();");
   return { elements, requests, run };
 }
 
@@ -63,79 +64,99 @@ test('12 cards are not revealed or saved until explicit confirmation', async () 
   assert.equal(requests.length, 1);
   assert.equal(requests[0].type, '12 ใบ');
   assert.equal(requests[0].cards.split(', ').length, 12);
-  assert.match(elements.get('save-status').textContent, /บันทึกผลสำเร็จ/);
+  assert.match(elements.get('save-status').textContent, /บันทึกแล้ว/);
   await run('showResults()');
   run('selectCard(deck[0]); autoPickCards(); shuffleAndReset()');
   assert.equal(requests.length, 1);
   assert.equal(run('selectedCards.length'), 12);
 });
 
-async function loginAdmin(state) {
-  state.elements.get('login-user').value = 'qa-admin';
-  state.elements.get('login-pass').value = 'local-test';
+test('owner login opens the home choice without selecting a reading or calling user management', async () => {
+  const state = setup({ success: true }, 'owner', false);
+  state.elements.get('login-user').value = 'qa-owner';
+  state.elements.get('login-pass').value = 'local-test-only';
   await state.run('attemptLogin()');
-}
-
-test('one admin login provides both token management and direct three-card access', async () => {
-  const state = setup({ success: true }, 'admin', false);
-  await loginAdmin(state);
-  assert.equal(state.elements.get('admin-toolbar').hidden, false);
-  assert.equal(state.elements.get('admin-view').style.display, 'block');
-  state.run('showAdminWorkspace("reading"); startAdminReading(3);');
   assert.equal(state.elements.get('tarot-view').style.display, 'block');
+  assert.equal(state.run('currentStage'), 'home');
+  assert.equal(state.elements.get('reading-home').hidden, false);
+  assert.equal(state.elements.get('card-selection-area').style.display, 'none');
+  assert.equal(state.run('sessionToken'), 'qa-token');
+  assert.deepEqual(state.requests.map(request => request.action), ['login']);
+  assert.equal(state.elements.get('login-pass').value, '');
+  assert.equal(state.elements.has('admin-toolbar'), false);
+});
+
+test('home offers direct three-card and twelve-card starts', () => {
+  const state = setup({ success: true }, 'owner', false);
+  state.run('showHome(); startReading(3)');
   assert.equal(state.run('currentMode'), 3);
   assert.equal(state.run('currentStage'), 'details');
-  assert.equal(state.requests.filter(request => request.action === 'login').length, 1);
-});
-
-test('switching admin screens preserves the question and chosen cards', async () => {
-  const state = setup({ success: true }, 'admin', false);
-  await loginAdmin(state);
-  state.run('showAdminWorkspace("reading"); acceptPrayer(); continueToSelection(); selectCard(deck[0]);');
-  state.elements.get('user-context').value = 'รายละเอียดทดสอบ';
-  const selected = state.run('selectedCards[0]');
-  state.run('showAdminWorkspace("manage"); showAdminWorkspace("reading");');
-  assert.equal(state.run('selectedCards[0]'), selected);
-  assert.equal(state.run('currentStage'), 'select');
-  assert.equal(state.elements.get('user-context').value, 'รายละเอียดทดสอบ');
-});
-
-test('admin preview reveals results and enables follow-up without a save API request', async () => {
-  const state = setup({ success: true }, 'admin', false);
-  await loginAdmin(state);
-  state.run('showAdminWorkspace("reading"); acceptPrayer(); continueToSelection(); autoPickCards();');
-  await state.run('showResults()');
-  assert.equal(state.requests.filter(request => request.action === 'saveResult').length, 0);
-  assert.equal(state.elements.get('follow-up-button').disabled, false);
-  assert.match(state.elements.get('save-status').textContent, /ไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา/);
-  state.run('startAdminReading(12); acceptPrayer();');
-  assert.equal(state.run('selectedCards.length'), 0);
+  assert.equal(state.elements.get('reading-home').hidden, true);
+  assert.equal(state.elements.get('question-block').style.display, 'block');
+  state.run('showHome(); startReading(12)');
   assert.equal(state.run('currentMode'), 12);
+  assert.equal(state.elements.get('user-info-12').style.display, 'block');
 });
 
-test('optional admin saves are explicitly marked and never use the client token-consuming type', async () => {
-  const state = setup({ success: true }, 'admin', false);
-  await loginAdmin(state);
-  state.elements.get('admin-save-results').checked = true;
-  state.run('showAdminWorkspace("reading"); acceptPrayer(); continueToSelection(); autoPickCards();');
-  await state.run('showResults()');
-  const save = state.requests.find(request => request.action === 'saveResult');
-  assert.equal(save.type, 'ทดสอบแอดมิน 12 ใบ');
-  assert.notEqual(save.type, '12 ใบ');
-  assert.match(save.fullPattern, /ผลทดสอบโดยแอดมิน/);
-  assert.equal(save.username, 'qa-admin');
-  assert.equal(save.password, undefined);
-  assert.equal(save.adminPass, undefined);
-  assert.match(state.elements.get('save-status').textContent, /บันทึกผลทดสอบแอดมินสำเร็จ/);
+test('legacy client and admin roles cannot enter the owner workspace', async () => {
+  for (const role of ['client', 'admin']) {
+    const state = setup({ success: true }, role, false);
+    state.elements.get('login-user').value = 'someone'; state.elements.get('login-pass').value = 'test';
+    await state.run('attemptLogin()');
+    assert.notEqual(state.elements.get('tarot-view').style.display, 'block');
+    assert.equal(state.run('sessionToken'), '');
+  }
 });
 
-test('client screens cannot activate admin tools or an admin preview', async () => {
+test('owner can start repeated 12-card and direct 3-card readings with new request IDs', async () => {
   const state = setup();
-  state.run('showAdminWorkspace("manage"); startAdminReading(3);');
-  assert.notEqual(state.elements.get('admin-view').style.display, 'block');
-  assert.equal(state.run('currentMode'), 12);
+  const first = state.run('requestId');
   state.run('autoPickCards()'); await state.run('showResults()');
-  assert.equal(state.requests.find(request => request.action === 'saveResult').type, '12 ใบ');
+  state.run('startReading(12)');
+  assert.equal(state.run('currentMode'), 12); assert.equal(state.run('selectedCards.length'), 0);
+  assert.notEqual(state.run('requestId'), first);
+  state.run('startReading(3)');
+  assert.equal(state.run('currentMode'), 3); assert.equal(state.run('currentStage'), 'details');
+});
+
+test('card names collapse for each new result and copying does not depend on visibility', async () => {
+  const state = setup();
+  state.elements.get('card-list-details').open = true;
+  state.run('autoPickCards()'); await state.run('showResults()');
+  assert.equal(state.elements.get('card-list-details').open, false);
+  assert.equal(state.elements.get('selected-list').children.length, 12);
+  assert.match(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), /<details id="card-list-details"[^>]*><summary>รายชื่อไพ่<\/summary>/);
+});
+
+test('saving uses the session and request ID without resending passwords or customer tokens', async () => {
+  const state = setup(); state.run('autoPickCards()'); await state.run('showResults()');
+  const request = state.requests[0];
+  assert.equal(request.sessionToken, 'qa-token'); assert.equal(request.requestId, state.run('requestId'));
+  assert.equal(request.password, undefined); assert.equal(request.adminPass, undefined); assert.equal(request.username, undefined);
+  assert.equal(request.type, '12 ใบ');
+});
+
+test('account changes validate password confirmation then rotate the local session and clear secrets', async () => {
+  const state = setup(); state.run('openAccount()');
+  state.elements.get('account-user').value = 'my-new-name';
+  state.elements.get('account-current').value = 'local-test-only';
+  state.elements.get('account-new').value = 'new-test-password';
+  state.elements.get('account-confirm').value = 'different-value';
+  await state.run('updateAccount()'); assert.equal(state.requests.length, 0);
+  state.elements.get('account-confirm').value = 'new-test-password';
+  await state.run('updateAccount()');
+  assert.equal(state.run('sessionToken'), 'qa-new-token');
+  assert.equal(state.run('loginUserGlobal'), 'my-new-name');
+  assert.equal(state.elements.get('account-current').value, '');
+  assert.equal(state.elements.get('account-new').value, '');
+  assert.equal(state.run('selectedCards.length'), 0);
+});
+
+test('retry preserves the request ID after an uncertain save response', async () => {
+  const state = setup({ success: false });
+  state.run('autoPickCards()'); await state.run('showResults()'); await state.run('retrySave()');
+  assert.equal(state.requests.length, 2);
+  assert.equal(state.requests[0].requestId, state.requests[1].requestId);
 });
 
 test('deselecting a card updates numbering and allows a replacement', () => {

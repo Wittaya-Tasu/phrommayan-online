@@ -4,64 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เปิดไพ่พรหมญาณ | หมอวิทยา ธรรมนาย</title>
-    
+
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-    <link rel="stylesheet" href="styles.css?v=20261031-5">
+    <link rel="stylesheet" href="styles.css?v=20261101-1">
 </head>
 <body>
 
-<div id="loading-overlay" role="status" aria-live="polite"><div class="loading-content"><span class="ui-icon" data-icon="loader" aria-hidden="true"></span><span>กำลังโหลดข้อมูล กรุณารอสักครู่</span></div></div>
+<div id="loading-overlay" role="status" aria-live="polite"><div class="loading-content"><span class="ui-icon" data-icon="loader" aria-hidden="true"></span><span>กำลังโหลด…</span></div></div>
 
 <div id="login-view">
     <div class="login-box">
         <div class="login-mark"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span></div><h2 class="login-title">หมอวิทยา ธรรมนาย</h2>
-        <form id="login-form"><label for="login-user">ชื่อผู้ใช้</label><input type="text" id="login-user" placeholder="กรอกชื่อผู้ใช้ที่ได้รับ" autocomplete="username" required>
-        <label for="login-pass">รหัสผ่าน</label><input type="password" id="login-pass" placeholder="กรอกรหัสผ่านที่ได้รับ" autocomplete="current-password" required><label class="password-toggle"><input type="checkbox" id="show-password"> แสดงรหัสผ่าน</label>
+        <form id="login-form"><label for="login-user">ชื่อผู้ใช้</label><input type="text" id="login-user" placeholder="ชื่อผู้ใช้" autocomplete="username" required>
+        <label for="login-pass">รหัสผ่าน</label><input type="password" id="login-pass" placeholder="รหัสผ่าน" autocomplete="current-password" required><label class="password-toggle"><input type="checkbox" id="show-password"> แสดงรหัสผ่าน</label>
         <button id="login-submit" type="submit" class="button button-primary login-btn"><span class="ui-icon" data-icon="log-in" aria-hidden="true"></span><span>เข้าสู่ระบบ</span></button></form>
         <p role="alert" id="login-err" class="field-error"></p>
-    </div>
-</div>
-
-<section id="admin-toolbar" class="admin-toolbar no-print" aria-label="พื้นที่ใช้งานแอดมิน" hidden>
-    <div class="admin-toolbar-heading">
-        <strong class="admin-toolbar-title"><span class="ui-icon" data-icon="shield" aria-hidden="true"></span><span>พื้นที่ใช้งานแอดมิน</span></strong>
-        <nav class="admin-navigation" aria-label="เมนูแอดมิน">
-            <button id="admin-manage-tab" type="button" aria-pressed="true" onclick="showAdminWorkspace('manage')" class="button admin-tab"><span class="ui-icon" data-icon="key" aria-hidden="true"></span><span>จัดการรหัส</span></button>
-            <button id="admin-reading-tab" type="button" aria-pressed="false" onclick="showAdminWorkspace('reading')" class="button admin-tab"><span class="ui-icon" data-icon="cards" aria-hidden="true"></span><span>เปิดไพ่ / ทดสอบระบบ</span></button>
-        </nav>
-    </div>
-    <div id="admin-reading-options" hidden>
-        <div class="admin-reading-actions">
-            <button id="admin-new-12" type="button" onclick="startAdminReading(12)" class="button button-secondary"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span><span>เริ่มเปิดไพ่ 12 ใบใหม่</span></button>
-            <button id="admin-new-3" type="button" onclick="startAdminReading(3)" class="button button-secondary"><span class="ui-icon" data-icon="cards" aria-hidden="true"></span><span>เปิดไพ่ 3 ใบ</span></button>
-        </div>
-        <label class="admin-save-option"><input id="admin-save-results" type="checkbox"> บันทึกผลที่ยืนยันลงชีต</label>
-        <p class="help-text">ปิดตัวเลือกนี้เพื่อทดสอบโดยไม่บันทึก เปิดเมื่อต้องการบันทึกผลทดสอบจริง โดยจะระบุว่าเป็นผลทดสอบแอดมินและไม่ตัดสิทธิ์เจ้าชะตา</p>
-    </div>
-    <p id="admin-navigation-status" class="help-text" role="status" aria-live="polite"></p>
-</section>
-
-<div id="admin-view" class="container" style="display:none;">
-    <header class="app-header admin-header"><div class="app-heading"><span class="section-eyebrow">สำหรับแอดมิน</span><h2>จัดการรหัสผู้ใช้งาน</h2></div><button class="button button-text" onclick="logout()"><span class="ui-icon" data-icon="log-out" aria-hidden="true"></span><span>ออกจากระบบ</span></button></header>
-    <div class="admin-dashboard">
-        <div class="admin-section">
-            <h3 class="section-title"><span class="ui-icon" data-icon="key" aria-hidden="true"></span><span>สร้างรหัสให้เจ้าชะตา</span></h3>
-            <p class="subsection-title">สร้างรหัสอัตโนมัติ</p>
-            <button onclick="generateToken(false)" class="button button-primary"><span class="ui-icon" data-icon="shuffle" aria-hidden="true"></span><span>สุ่มรหัสให้ 1 สิทธิ์</span></button>
-            <p class="subsection-title">กำหนดชื่อผู้ใช้และรหัสผ่านเอง</p>
-            <div class="admin-input-group">
-                <label for="custom-u">ชื่อผู้ใช้<input type="text" id="custom-u" placeholder="ชื่อผู้ใช้ที่ต้องการ" autocomplete="off"></label>
-                <label for="custom-p">รหัสผ่าน<input type="text" id="custom-p" placeholder="รหัสผ่านที่ต้องการ" autocomplete="off"></label>
-                <button onclick="generateToken(true)" class="button button-secondary"><span class="ui-icon" data-icon="plus" aria-hidden="true"></span><span>สร้างรหัสที่กำหนดเอง</span></button>
-            </div>
-            <p id="admin-msg" class="feedback-message" role="status"></p>
-        </div>
-        <div class="admin-section">
-            <h3 class="section-title"><span class="ui-icon" data-icon="list" aria-hidden="true"></span><span>รหัสผู้ใช้ 30 รายการล่าสุด</span></h3>
-            <button onclick="fetchTokenList()" class="button button-secondary button-small"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span><span>อัปเดตตาราง</span></button>
-            <div id="table-container"></div>
-        </div>
     </div>
 </div>
 
@@ -77,7 +35,7 @@
                 <p><span>โปรดเมตตาบอก</span> <span>มาให้ข้าพเจ้าได้รับรู้</span> <span>รับทราบ</span></p>
                 <p><span>ขอให้ข้าพเจ้าได้คำตอบ</span> <span>ในสิ่งที่อยากรู้</span> <span>ด้วยเทอญ</span></p>
             </div>
-            <button onclick="acceptPrayer()" class="button button-gold btn-gold"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>ข้าพเจ้าอธิษฐานแล้ว</span></button>
+            <button onclick="acceptPrayer()" class="button button-gold btn-gold"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>ปิด</span></button>
         </div>
     </div>
 
@@ -85,47 +43,49 @@
         <div class="modal-box special-box">
             <div class="special-title"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span><span>ไพ่พิเศษ</span></div>
             <div class="special-text" id="extra-card-message"></div>
-            <button onclick="closeExtraPopup()" class="button button-primary btn-gold"><span class="ui-icon" data-icon="plus" aria-hidden="true"></span><span>รับสิทธิ์เลือกไพ่เพิ่ม</span></button>
+            <button onclick="closeExtraPopup()" class="button button-primary btn-gold"><span class="ui-icon" data-icon="plus" aria-hidden="true"></span><span>เลือกไพ่เพิ่ม</span></button>
+        </div>
+    </div>
+
+
+    <div id="account-overlay" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <div class="modal-box account-box">
+            <div class="account-heading"><h3 id="account-title">บัญชีของฉัน</h3><button id="account-close" type="button" class="button button-text" onclick="closeAccount()">ปิด</button></div>
+            <form id="account-form">
+                <label for="account-user">ชื่อผู้ใช้</label><input id="account-user" type="text" autocomplete="username" maxlength="80" required>
+                <label for="account-current">รหัสผ่านปัจจุบัน</label><input id="account-current" type="password" autocomplete="current-password" required>
+                <label for="account-new">รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)</label><input id="account-new" type="password" autocomplete="new-password" minlength="12" maxlength="128">
+                <label for="account-confirm">ยืนยันรหัสผ่านใหม่</label><input id="account-confirm" type="password" autocomplete="new-password" maxlength="128">
+                <p id="account-status" class="feedback-message" role="status" aria-live="polite"></p>
+                <button id="account-save" type="submit" class="button button-primary"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>บันทึก</span></button>
+            </form>
         </div>
     </div>
 
     <div class="container" id="tarot-content">
         <div class="no-print">
-            <header class="app-header"><div class="brand"><div class="brand-mark"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span></div><div><h2>หมอวิทยา ธรรมนาย</h2><p class="sub-title">พรหมญาณพยากรณ์ออนไลน์</p></div></div><button class="button button-text" onclick="logout()"><span class="ui-icon" data-icon="log-out" aria-hidden="true"></span><span>ออกจากระบบ</span></button></header>
-            
-            
-            <nav class="journey" aria-label="ขั้นตอนการเปิดไพ่">
-                <ol>
-                    <li data-step="intro" aria-current="step"><span>1</span>เตรียมตัว</li>
-                    <li data-step="details"><span>2</span>ระบุข้อมูล</li>
-                    <li data-step="select"><span>3</span>เลือกและยืนยัน</li>
-                    <li data-step="result"><span>4</span>ดูผลไพ่</li>
-                </ol>
-            </nav>
-            <p id="flow-heading" class="flow-heading" tabindex="-1">เริ่มต้นเปิดไพ่พรหมญาณ 12 ใบ</p>
-            <div id="main-controls">
-                <div class="ethics-box">
-                    <h4><span class="ui-icon" data-icon="book" aria-hidden="true"></span><span>จรรยาบรรณและคุณธรรม ของนักพยากรณ์</span></h4>
-                    <ol>
-                        <li>ไม่ทำนาย ความเป็นความตายของผู้คน</li>
-                        <li>ไม่ทำนาย ดวงชะตาเด็กน้อย(เด็กทารก - 10 ขวบ)</li>
-                        <li>ไม่ทำนาย ยุยงให้คู่ครอง เลิกลา หย่าร้างกัน</li>
-                        <li>ไม่ทำนาย เพื่อผลประโยชน์หรือแนะนำพิธีกรรมแปลกๆ</li>
-                    </ol>
-                    <p class="privacy-notice"><span class="ui-icon" data-icon="lock" aria-hidden="true"></span>ข้อมูลและคำพยากรณ์ของเจ้าชะตาจะ<strong>เป็นความลับไม่นำไปเปิดเผย</strong></p>
-                </div>
-                <button onclick="startFlow(12)" class="button button-primary button-start"><span class="ui-icon" data-icon="arrow-right" aria-hidden="true"></span><span>เริ่มเปิดไพ่ 12 ใบ</span></button>
-            </div>
-
+            <header class="app-header"><div class="brand"><div class="brand-mark"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span></div><div><h2>หมอวิทยา ธรรมนาย</h2><p class="sub-title">พรหมญาณพยากรณ์ออนไลน์</p></div></div><nav class="workspace-nav" aria-label="เมนูส่วนตัว"><button id="home-button" class="button button-text" onclick="showHome()" aria-pressed="true">หน้าแรก</button>
+                <button id="new-12" class="button button-secondary" onclick="startReading(12)">12 ใบ</button>
+                <button id="new-3" class="button button-secondary" onclick="startReading(3)">3 ใบ</button>
+                <button id="prayer-button" class="button button-text" onclick="setDialog('prayer-overlay', true)"><span class="ui-icon" data-icon="book" aria-hidden="true"></span><span>บทอธิษฐาน</span></button>
+                <button id="account-button" class="button button-text" onclick="openAccount()"><span class="ui-icon" data-icon="key" aria-hidden="true"></span><span>บัญชี</span></button>
+                <button id="logout-button" class="button button-text" onclick="logout()"><span class="ui-icon" data-icon="log-out" aria-hidden="true"></span><span>ออก</span></button>
+            </nav></header>
+            <section id="reading-home" class="reading-home" aria-labelledby="home-heading" hidden>
+    <h3 id="home-heading" tabindex="-1">เปิดไพ่พรหมญาณ</h3>
+    <div class="reading-choices">
+        <button id="home-start-12" type="button" class="reading-choice" onclick="startReading(12)"><span class="choice-number">12</span><span class="choice-label">เปิดไพ่ 12 ใบ</span><span class="ui-icon" data-icon="arrow-right" aria-hidden="true"></span></button>
+        <button id="home-start-3" type="button" class="reading-choice reading-choice-gold" onclick="startReading(3)"><span class="choice-number">3</span><span class="choice-label">เปิดไพ่ 3 ใบ</span><span class="ui-icon" data-icon="arrow-right" aria-hidden="true"></span></button>
+    </div>
+</section><h3 id="flow-heading" class="flow-heading" tabindex="-1">เปิดไพ่ 12 ใบ</h3>
             <div id="card-selection-area" style="display:none;">
                 <div class="user-info-box" id="user-info-12" style="display:none;">
-<h3>มีเรื่องที่อยากเล่าเพิ่มเติมไหม?</h3><p class="help-text">ไม่บังคับกรอก หากต้องการดูภาพรวม กดไปเลือกไพ่ได้เลย</p>
+
                     <div id="user-info-content">
-                        <label for="user-context">สถานการณ์ที่กำลังเผชิญอยู่</label>
-                        <textarea id="user-context" placeholder="เล่าเรื่องราวคร่าวๆ..."></textarea>
-                        <p class="topic-heading" id="topic-heading">เรื่องไหนอยากรู้เป็นพิเศษ</p>
-                        <p class="help-text" id="topic-help">เลือกได้หลายหัวข้อ แตะหัวข้อเดิมอีกครั้งเพื่อยกเลิก</p>
-                        <div class="question-topics" role="group" aria-labelledby="topic-heading" aria-describedby="topic-help">
+                        <label for="user-context">สถานการณ์</label>
+                        <textarea id="user-context" placeholder="สถานการณ์"></textarea>
+                        <p class="topic-heading" id="topic-heading">หัวข้อ</p>
+                        <div class="question-topics" role="group" aria-labelledby="topic-heading">
                             <button type="button" class="topic-button" data-topic="ภาพรวมชีวิต" aria-pressed="false" onclick="toggleQuestionTopic(this)">ภาพรวมชีวิต</button>
                             <button type="button" class="topic-button" data-topic="การงาน" aria-pressed="false" onclick="toggleQuestionTopic(this)">การงาน</button>
                             <button type="button" class="topic-button" data-topic="การเงิน" aria-pressed="false" onclick="toggleQuestionTopic(this)">การเงิน</button>
@@ -139,37 +99,37 @@
                             <button type="button" class="topic-button" data-topic="โชคลาภ" aria-pressed="false" onclick="toggleQuestionTopic(this)">โชคลาภ</button>
                             <button type="button" class="topic-button" data-topic="ข้อพิพาทและคดีความ" aria-pressed="false" onclick="toggleQuestionTopic(this)">ข้อพิพาทและคดีความ</button>
                         </div>
-                        <label for="user-question-12">คำถามเพิ่มเติม (ถ้ามี)</label>
-                        <textarea id="user-question-12" placeholder="พิมพ์รายละเอียดของเรื่องที่อยากรู้เพิ่มเติมได้ที่นี่"></textarea>
+                        <label for="user-question-12">คำถามเพิ่มเติม</label>
+                        <textarea id="user-question-12" placeholder="คำถามเพิ่มเติม"></textarea>
                     </div>
                 </div>
 
                 <div id="question-block" style="display:none;">
-                    <p class="question-prompt">พิมพ์คำถามเจาะจงที่ต้องการทราบ</p>
-                    <label for="user-question-3" class="sr-only">คำถามเจาะจงที่ต้องการทราบ</label><input type="text" id="user-question-3" placeholder="เช่น งานที่กำลังสมัครมีแนวโน้มอย่างไร" aria-describedby="question-help question-error"><p id="question-help" class="help-text">ระบุครั้งละหนึ่งเรื่อง เพื่อใช้ประกอบการอ่านไพ่</p><p id="question-error" class="field-error" role="alert"></p>
+
+                    <label for="user-question-3" class="question-label">คำถาม</label><input type="text" id="user-question-3" placeholder="คำถาม" aria-describedby="question-error"><p id="question-error" class="field-error" role="alert"></p>
                 </div>
 
-                <div id="details-actions"><button onclick="continueToSelection()" class="button button-primary primary-action"><span class="ui-icon" data-icon="arrow-right" aria-hidden="true"></span><span>ไปเลือกไพ่</span></button></div><div id="selection-tools" style="display:none;"><div class="selection-guide"><p class="selection-instructions">แตะไพ่เพื่อเลือก แตะใบเดิมอีกครั้งเพื่อยกเลิก<br>ตัวเลขบนไพ่ที่เลือกคือลำดับการหยิบ</p><p id="selection-count" class="selection-count" role="status" aria-live="polite"></p><div id="selection-progress" class="selection-progress" role="progressbar" aria-label="จำนวนไพ่ที่เลือก" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div id="selection-progress-fill"></div></div></div><div id="status-msg"></div>
-                
+                <div id="details-actions"><button onclick="continueToSelection()" class="button button-primary primary-action"><span class="ui-icon" data-icon="arrow-right" aria-hidden="true"></span><span>เลือกไพ่</span></button></div><div id="selection-tools" style="display:none;"><div class="selection-guide"><p id="selection-count" class="selection-count" role="status" aria-live="polite"></p><div id="selection-progress" class="selection-progress" role="progressbar" aria-label="จำนวนไพ่ที่เลือก" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div id="selection-progress-fill"></div></div></div><div id="status-msg"></div>
+
                 <div class="action-buttons">
                     <button onclick="toggleNumbers()" id="btn-toggle-num" class="button button-secondary"><span class="ui-icon" data-icon="eye-off" aria-hidden="true"></span><span>ซ่อนเลขตำแหน่ง</span></button>
-                    <button onclick="shuffleAndReset()" class="button button-secondary"><span class="ui-icon" data-icon="shuffle" aria-hidden="true"></span><span>สับไพ่และเลือกใหม่</span></button>
-                    <button onclick="autoPickCards()" class="button button-secondary"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span><span>ให้ระบบเลือกไพ่ที่เหลือ</span></button>
+                    <button onclick="shuffleAndReset()" class="button button-secondary"><span class="ui-icon" data-icon="shuffle" aria-hidden="true"></span><span>สับไพ่</span></button>
+                    <button onclick="autoPickCards()" class="button button-secondary"><span class="ui-icon" data-icon="sparkles" aria-hidden="true"></span><span>สุ่มไพ่ที่เหลือ</span></button>
                 </div>
-                
-                <div id="card-board" class="grid-container" aria-label="ไพ่คว่ำหน้าสำหรับเลือก"></div><div class="confirm-bar"><p id="confirm-help">เลือกไพ่ให้ครบก่อนยืนยัน</p><button id="confirm-selection" onclick="showResults()" disabled class="button button-primary primary-action"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>ยืนยันการเลือกและเปิดไพ่</span></button><button onclick="backToDetails()" class="button button-text secondary-action"><span class="ui-icon" data-icon="arrow-left" aria-hidden="true"></span><span>กลับไปแก้ข้อมูล</span></button></div></div>
+
+                <div id="card-board" class="grid-container" aria-label="ไพ่คว่ำหน้าสำหรับเลือก"></div><div class="confirm-bar"><button id="confirm-selection" onclick="showResults()" disabled class="button button-primary primary-action"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>เปิดผลไพ่</span></button><button onclick="backToDetails()" class="button button-text secondary-action"><span class="ui-icon" data-icon="arrow-left" aria-hidden="true"></span><span>แก้ข้อมูล</span></button></div></div>
             </div>
         </div> 
-        
+
         <div id="result-area" class="result-section">
             <div class="no-print">
-                <h3 id="result-heading" tabindex="-1">ผลไพ่ที่คุณเลือก</h3><p id="save-status" class="save-status" role="status" aria-live="polite"></p><p class="help-text">คัดลอกผลหรือบันทึกภาพเก็บไว้ก่อนปิดหน้านี้</p>
-                <div id="selected-list"></div>
-                <div class="result-actions">
+                <h3 id="result-heading" class="sr-only" tabindex="-1">ผลไพ่</h3><p id="save-status" class="save-status" role="status" aria-live="polite"></p>
+                <div class="result-actions"><button id="retry-save" class="button button-secondary" onclick="retrySave()" hidden>บันทึกอีกครั้ง</button><button id="session-login" class="button button-secondary" onclick="returnToLogin()" hidden>เข้าสู่ระบบอีกครั้ง</button>
                     <button onclick="copyResult()" class="button button-secondary btn-copy"><span class="ui-icon" data-icon="copy" aria-hidden="true"></span><span>คัดลอกผลไพ่</span></button>
                     <button id="follow-up-button" onclick="startFlow3Cards()" class="button button-primary btn-3cards"><span class="ui-icon" data-icon="message" aria-hidden="true"></span><span>ถามต่อด้วยไพ่ 3 ใบ</span></button>
                     <button id="btnSaveImg" onclick="saveAsImage()" class="button button-secondary"><span class="ui-icon" data-icon="download" aria-hidden="true"></span><span>บันทึกภาพผลไพ่</span></button>
                 </div>
+                <details id="card-list-details" class="card-list-details"><summary>รายชื่อไพ่</summary><div id="selected-list"></div></details>
                 <p id="copy-status" class="feedback-message" role="status"></p>
             </div>
 
@@ -179,10 +139,10 @@
                         <div id="master-cards-area" class="master-cards-layout"></div>
                         <div class="watermark-overlay">© สงวนลิขสิทธิ์ พรหมญาณพยากรณ์ : หมอวิทยา ธรรมนาย</div>
                     </div>
-                    
+
                     <div id="display-question" class="question-box"></div>
                     <div id="user-context-display" class="user-context-box"></div>
-                    
+
                     <!-- 🌟 พื้นที่กระดานไพ่พร้อมเครื่องมือไฮไลท์ 🌟 -->
                     <div class="card-area-wrapper">
                         <!-- ปุ่มไฮไลท์ ย้ายเข้ามาในพื้นที่ว่างฝั่งซ้ายของกระดาน 12 ใบ -->
@@ -192,7 +152,7 @@
                                 <button class="btn-icon reading-filter" data-filter="bad" aria-pressed="false" onclick="filterCards('bad')" title="เน้นไพ่ควรระวัง" aria-label="เน้นไพ่ควรระวัง"><span class="ui-icon" data-icon="alert" aria-hidden="true"></span><span>ระวัง</span></button>
                                 <button class="btn-icon reading-filter" data-filter="reset" aria-pressed="false" onclick="filterCards('reset')" title="แสดงไพ่ทั้งหมด" aria-label="แสดงไพ่ทั้งหมด"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span><span>ทุกใบ</span></button>
                             </div>
-                            <p class="help-text">เลือกวันเพื่อดูความสัมพันธ์</p><div class="filter-group">
+                            <span class="filter-label">วันเกิด</span><div class="filter-group">
                                 <button class="btn-icon day-btn" aria-pressed="false" data-day="Sun" onclick="setDayMode('Sun', this)" title="ไฮไลท์ตามวันอาทิตย์">อา.</button>
                                 <button class="btn-icon day-btn" aria-pressed="false" data-day="Mon" onclick="setDayMode('Mon', this)" title="ไฮไลท์ตามวันจันทร์">จ.</button>
                                 <button class="btn-icon day-btn" aria-pressed="false" data-day="Tue" onclick="setDayMode('Tue', this)" title="ไฮไลท์ตามวันอังคาร">อ.</button>
@@ -206,7 +166,7 @@
                         <!-- กระดานไพ่ -->
                         <div id="card-area"></div>
                     </div>
-                    
+
                     <p class="export-signature">พรหมญาณพยากรณ์ โดย หมอวิทยา ธรรมนาย</p>
                 </div>
             </div>
@@ -214,6 +174,6 @@
     </div>
 </div>
 
-<script src="app.js?v=20261031-5" defer></script>
+<script src="app.js?v=20261101-1" defer></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 {
   "name": "phrommayan-online",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Phrommayan online card selection — phase one usability improvements",
+  "description": "Personal Phrommayan workspace with direct 12-card and 3-card readings",
   "scripts": {
     "start": "node tools/serve.mjs",
     "preview:qa": "node tools/serve.mjs --mock",
-    "test": "node --test tests/flow.test.cjs"
+    "test": "node --test tests/*.test.cjs"
   }
 }

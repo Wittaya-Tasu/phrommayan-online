@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const mock = process.argv.includes('--mock');
 const port = Number(process.env.PHROMMAYAN_PORT || 4173);
+let qaAccount = { username: 'qa-owner', password: 'local-test-only' };
+let qaToken = '';
+const qaResults = new Set();
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.json': 'application/json; charset=utf-8' };
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
@@ -14,15 +17,24 @@ const server = http.createServer(async (req, res) => {
     for await (const part of req) text += part;
     const data = JSON.parse(text);
     let output;
-    if (data.action === 'login') output = { success: true, role: data.username === 'qa-admin' ? 'admin' : 'client' };
+    if (data.action === 'login') {
+      const valid = data.username === qaAccount.username && data.password === qaAccount.password;
+      if (valid) qaToken = 'qa-session-' + Date.now();
+      output = valid ? { success: true, role: 'owner', username: qaAccount.username, sessionToken: qaToken } : { success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' };
+    } else if (!qaToken || data.sessionToken !== qaToken) output = { success: false, code: 'SESSION_EXPIRED', message: 'กรุณาเข้าสู่ระบบอีกครั้ง' };
     else if (data.action === 'saveResult') {
       await new Promise(resolve => setTimeout(resolve, 1800));
-      output = { success: data.username !== 'qa-fail' };
-    } else if (data.action === 'list') output = { success: true, data: [
-      { time: '31/10/2026 12:00', user: 'QA_READY', pass: 'TEST123', status: 'Ready' },
-      { time: '31/10/2026 11:00', user: 'QA_USED', pass: 'TEST456', status: 'Used' }
-    ] };
-    else output = { success: false, message: 'Local QA does not create real tokens' };
+      output = { success: true, duplicate: qaResults.has(data.requestId) };
+      qaResults.add(data.requestId);
+    } else if (data.action === 'updateAccount') {
+      if (data.currentPassword !== qaAccount.password) output = { success: false, message: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' };
+      else {
+        qaAccount = { username: data.username, password: data.newPassword || qaAccount.password };
+        qaToken = 'qa-session-' + Date.now();
+        output = { success: true, role: 'owner', username: qaAccount.username, sessionToken: qaToken };
+      }
+    } else if (data.action === 'logout') { qaToken = ''; output = { success: true }; }
+    else output = { success: false, message: 'ไม่มีสิทธิ์ใช้งาน' };
     res.writeHead(200, { 'Content-Type': types['.json'] }); res.end(JSON.stringify(output)); return;
   }
   try {

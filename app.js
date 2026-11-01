@@ -36,131 +36,133 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         button.innerHTML = `${iconMarkup(name)}<span>${escapeHTML(label)}</span>`;
     }
 
-    let currentUser = ""; let currentPass = ""; let loginUserGlobal = "";
-    let sessionRole = 'client';
+    let loginUserGlobal = '';
+    let sessionToken = '';
+    let accountBusy = false;
+    let requestId = '';
 
-    function isAdminSession() { return sessionRole === 'admin'; }
-
-    function showAdminWorkspace(workspace) {
-        if (!isAdminSession()) return;
-        if (saveInProgress) {
-            document.getElementById('admin-navigation-status').textContent = 'กำลังบันทึกผล กรุณารอให้เสร็จก่อนสลับหน้า';
-            return;
-        }
-        const reading = workspace === 'reading';
-        document.getElementById('admin-toolbar').hidden = false;
-        document.getElementById('admin-view').style.display = reading ? 'none' : 'block';
-        document.getElementById('tarot-view').style.display = reading ? 'block' : 'none';
-        document.getElementById('admin-reading-options').hidden = !reading;
-        document.getElementById('admin-manage-tab').setAttribute('aria-pressed', String(!reading));
-        document.getElementById('admin-reading-tab').setAttribute('aria-pressed', String(reading));
-        document.getElementById('admin-navigation-status').textContent = '';
-        if (reading) {
-            setStage(currentStage);
-            document.getElementById(currentStage === 'result' ? 'result-heading' : 'flow-heading').focus();
-        }
-    }
-
-    function setAdminBusy(busy) {
-        if (!isAdminSession()) return;
-        ['admin-manage-tab', 'admin-reading-tab', 'admin-new-12', 'admin-new-3', 'admin-save-results'].forEach(id => {
+    function setWorkspaceBusy(busy) {
+        ['home-button', 'new-12', 'new-3', 'account-button', 'logout-button', 'prayer-button'].forEach(id => {
             document.getElementById(id).disabled = busy;
         });
     }
 
-    function startAdminReading(mode) {
-        if (!isAdminSession() || saveInProgress) return;
-        if ((selectedCards.length || currentStage === 'result') && !confirm('ต้องการเริ่มไพ่ชุดใหม่หรือไม่? กรุณาคัดลอกผลหรือบันทึกภาพชุดปัจจุบันก่อนเริ่มใหม่')) return;
-        showAdminWorkspace('reading');
-        document.getElementById('user-context').value = '';
-        document.getElementById('user-question-12').value = '';
-        document.getElementById('user-question-3').value = '';
-        document.getElementById('question-error').textContent = '';
-        selectedQuestionTopics.clear();
-        document.querySelectorAll('.topic-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
-        if (mode === 12) { startFlow(12); return; }
-        currentMode = 3;
-        document.getElementById('main-controls').style.display = 'none';
-        document.getElementById('card-selection-area').style.display = 'block';
-        resetReading(); backToDetails();
+    function showHome() {
+        if (saveInProgress || accountBusy) return;
+        setStage('home');
+        document.getElementById('card-selection-area').style.display = 'none';
+        document.getElementById('result-area').style.display = 'none';
+        document.getElementById('home-heading').focus();
     }
 
-    async function callAPI(payload) {
-        document.getElementById('loading-overlay').style.display = 'flex';
+    function startReading(mode, confirmReset = true) {
+        if (saveInProgress || accountBusy) return;
+        if (confirmReset && selectedCards.length && !confirm('เริ่มไพ่ชุดใหม่?')) return;
+        currentMode = mode;
+        ['user-context', 'user-question-12', 'user-question-3'].forEach(id => { document.getElementById(id).value = ''; });
+        selectedQuestionTopics.clear();
+        document.querySelectorAll('.topic-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
+        document.getElementById('question-error').textContent = '';
+        document.getElementById('card-selection-area').style.display = 'block';
+        document.getElementById('card-list-details').open = false;
+        resetReading(); backToDetails();
+        document.getElementById('new-12').setAttribute('aria-pressed', String(mode === 12));
+        document.getElementById('new-3').setAttribute('aria-pressed', String(mode === 3));
+    }
+
+    async function callAPI(payload, showLoading = true) {
+        if (showLoading) document.getElementById('loading-overlay').style.display = 'flex';
         try {
             const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ ...payload, ...(sessionToken ? { sessionToken } : {}) })
             });
+            if (!response.ok) throw new Error('Network response failed');
             const result = await response.json();
-            document.getElementById('loading-overlay').style.display = 'none';
+            if (result.code === 'SESSION_EXPIRED') {
+                sessionToken = '';
+                document.getElementById('session-login').hidden = false;
+            }
             return result;
         } catch (error) {
-            document.getElementById('loading-overlay').style.display = 'none';
-            alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ ลองรีเฟรชหน้าเว็บอีกครั้ง");
-            return { success: false, message: "Connection Error" };
+            return { success: false, code: 'CONNECTION_ERROR', message: 'เชื่อมต่อไม่สำเร็จ ลองอีกครั้ง' };
+        } finally {
+            if (showLoading) document.getElementById('loading-overlay').style.display = 'none';
         }
     }
 
     async function attemptLogin() {
         if (loginInProgress) return;
-        const u = document.getElementById('login-user').value.trim();
-        const p = document.getElementById('login-pass').value.trim();
-        const errLabel = document.getElementById('login-err');
-        if (!u || !p) { errLabel.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ'; return; }
+        const username = document.getElementById('login-user').value.trim();
+        const password = document.getElementById('login-pass').value;
+        const error = document.getElementById('login-err');
+        if (!username || !password) { error.textContent = 'กรอกชื่อผู้ใช้และรหัสผ่าน'; return; }
         loginInProgress = true;
         const button = document.getElementById('login-submit');
-        button.disabled = true; setButtonContents(button, 'loader', 'กำลังตรวจสอบรหัส…'); errLabel.textContent = '';
-        const res = await callAPI({ action: 'login', username: u, password: p });
+        button.disabled = true; setButtonContents(button, 'loader', 'กำลังเข้าสู่ระบบ…'); error.textContent = '';
+        const response = await callAPI({ action: 'login', username, password });
         loginInProgress = false; button.disabled = false; setButtonContents(button, 'log-in', 'เข้าสู่ระบบ');
-        if (res.success) {
-            sessionRole = res.role === 'admin' ? 'admin' : 'client';
-            document.getElementById('login-view').style.display = 'none'; loginUserGlobal = u;
-            document.getElementById('login-pass').value = '';
-            if (res.role === 'admin') {
-                currentUser = u; currentPass = p;
-                setStage('intro'); showAdminWorkspace('manage'); fetchTokenList();
-            } else {
-                document.getElementById('tarot-view').style.display = 'block'; setStage('intro');
-                document.getElementById('flow-heading').focus();
-            }
-        } else {
-            errLabel.textContent = res.message === 'Connection Error' ? 'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง' : res.message;
+        if (!response.success || response.role !== 'owner' || !response.sessionToken) {
+            error.textContent = response.message || 'บัญชีนี้ไม่มีสิทธิ์ใช้งาน'; return;
         }
+        sessionToken = response.sessionToken; loginUserGlobal = response.username || username;
+        document.getElementById('login-pass').value = '';
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('tarot-view').style.display = 'block';
+        document.getElementById('session-login').hidden = true;
+        if (currentStage === 'result') setWorkspaceBusy(false);
+        else showHome();
+        document.getElementById(currentStage === 'result' ? 'result-heading' : 'home-heading').focus();
     }
 
-    async function generateToken(isCustom) {
-        let payload = { action: "generate", adminUser: currentUser, adminPass: currentPass };
-        if (isCustom) {
-            let u = document.getElementById('custom-u').value.trim();
-            let p = document.getElementById('custom-p').value.trim();
-            if(!u || !p) { alert("กรุณากรอก Username และ Password ที่ต้องการสร้าง"); return; }
-            payload.newUsername = u; payload.newPassword = p;
-        }
-        const res = await callAPI(payload);
-        const msg = document.getElementById('admin-msg');
-        if(res.success) {
-            msg.className = 'feedback-message success'; msg.innerText = `สร้างรหัสสำเร็จ — ชื่อผู้ใช้: ${res.username} / รหัสผ่าน: ${res.password}`;
-            document.getElementById('custom-u').value = ""; document.getElementById('custom-p').value = "";
-            fetchTokenList(); 
-        } else {
-            msg.className = 'feedback-message error'; msg.innerText = `สร้างรหัสไม่สำเร็จ: ${res.message}`;
-        }
+    function openAccount() {
+        if (saveInProgress || accountBusy) return;
+        document.getElementById('account-user').value = loginUserGlobal;
+        ['account-current', 'account-new', 'account-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+        document.getElementById('account-status').textContent = '';
+        setDialog('account-overlay', true);
+        document.getElementById('account-user').focus();
     }
 
-    async function fetchTokenList() {
-        const res = await callAPI({ action: "list", adminUser: currentUser, adminPass: currentPass });
-        if(res.success) {
-            let html = `<table><tr><th>วันที่สร้าง</th><th>ชื่อผู้ใช้</th><th>รหัสผ่าน</th><th>สถานะ</th></tr>`;
-            res.data.forEach(r => {
-                let statusClass = r.status === "Ready" ? "status-ready" : "status-used";
-                let statusText = r.status === "Ready" ? "พร้อมใช้" : "ใช้แล้ว";
-                html += `<tr><td>${escapeHTML(r.time)}</td><td>${escapeHTML(r.user)}</td><td>${escapeHTML(r.pass)}</td><td><span class="${statusClass}">${statusText}</span></td></tr>`;
-            });
-            html += `</table>`;
-            document.getElementById('table-container').innerHTML = html;
+    function closeAccount() {
+        if (accountBusy) return;
+        ['account-current', 'account-new', 'account-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+        setDialog('account-overlay', false);
+        document.getElementById('account-button').focus();
+    }
+
+    async function updateAccount() {
+        if (accountBusy || saveInProgress) return;
+        const username = document.getElementById('account-user').value.trim();
+        const currentPassword = document.getElementById('account-current').value;
+        const newPassword = document.getElementById('account-new').value;
+        const confirmation = document.getElementById('account-confirm').value;
+        const status = document.getElementById('account-status');
+        status.className = 'feedback-message error';
+        if (!username || !currentPassword) { status.textContent = 'กรอกชื่อผู้ใช้และรหัสผ่านปัจจุบัน'; return; }
+        if (newPassword && newPassword.length < 12) { status.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษร'; return; }
+        if (newPassword !== confirmation) { status.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน'; return; }
+        accountBusy = true;
+        ['account-user', 'account-current', 'account-new', 'account-confirm', 'account-save', 'account-close'].forEach(id => { document.getElementById(id).disabled = true; });
+        const button = document.getElementById('account-save'); setButtonContents(button, 'loader', 'กำลังบันทึก…');
+        const response = await callAPI({ action: 'updateAccount', username, currentPassword, newPassword }, false);
+        accountBusy = false;
+        ['account-user', 'account-current', 'account-new', 'account-confirm', 'account-save', 'account-close'].forEach(id => { document.getElementById(id).disabled = false; });
+        setButtonContents(button, 'check', 'บันทึก');
+        if (!response.success || !response.sessionToken) {
+            status.textContent = response.code === 'CONNECTION_ERROR' ? 'ยังยืนยันการเปลี่ยนบัญชีไม่ได้ ลองเข้าสู่ระบบด้วยข้อมูลใหม่ก่อน' : (response.message || 'บันทึกไม่สำเร็จ'); return;
         }
+        loginUserGlobal = response.username; sessionToken = response.sessionToken;
+        ['account-current', 'account-new', 'account-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+        status.className = 'feedback-message success'; status.textContent = 'บันทึกบัญชีแล้ว';
+    }
+
+    function returnToLogin() {
+        setDialog('account-overlay', false);
+        document.getElementById('tarot-view').style.display = 'none';
+        document.getElementById('login-view').style.display = 'block';
+        document.getElementById('login-user').value = loginUserGlobal;
+        document.getElementById('login-pass').focus();
     }
 
     const CARD_DATA = {
@@ -205,7 +207,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     let selectionLocked = false;
     let saveInProgress = false;
     let lastSaveSucceeded = false;
-    let currentStage = 'intro';
+    let currentStage = 'home';
     let loginInProgress = false;
     const selectedQuestionTopics = new Set();
 
@@ -225,21 +227,16 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     function setDialog(id, open) {
         document.getElementById(id).style.display = open ? 'flex' : 'none';
         document.getElementById('tarot-content').inert = open;
-        document.getElementById('admin-toolbar').inert = open;
         if (open) document.querySelector(`#${id} button`).focus();
     }
 
     function setStage(stage) {
         currentStage = stage;
-        document.getElementById('tarot-content').classList.toggle('is-intro', stage === 'intro');
-        const names = { intro: 'เริ่มต้นเปิดไพ่พรหมญาณ 12 ใบ', details: currentMode === 12 ? 'ระบุข้อมูลเพิ่มเติม (ข้ามได้)' : 'ระบุคำถามสำหรับไพ่ 3 ใบ', select: `เลือกไพ่${currentMode === 12 ? ' 12 ใบ' : 'สำหรับคำถามของคุณ'}`, result: 'ผลไพ่ของคุณ' };
-        document.getElementById('flow-heading').textContent = names[stage];
-        const order = ['intro', 'details', 'select', 'result'];
-        document.querySelectorAll('.journey li').forEach(item => {
-            item.classList.toggle('is-complete', order.indexOf(item.dataset.step) < order.indexOf(stage));
-            if (item.dataset.step === stage) item.setAttribute('aria-current', 'step');
-            else item.removeAttribute('aria-current');
-        });
+        document.getElementById('reading-home').hidden = stage !== 'home';
+        document.getElementById('home-button').setAttribute('aria-pressed', String(stage === 'home'));
+        const names = { details: `เปิดไพ่ ${currentMode} ใบ`, select: `เลือกไพ่ ${currentMode} ใบ`, result: 'ผลไพ่' };
+        document.getElementById('flow-heading').textContent = names[stage] || 'เปิดไพ่';
+        document.getElementById('flow-heading').hidden = stage === 'result' || stage === 'home';
     }
 
     function updateSelection() {
@@ -251,10 +248,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         progress.setAttribute('aria-valuenow', String(count));
         document.getElementById('selection-progress-fill').style.width = `${count / maxAllowed * 100}%`;
         const next = (currentMode === 12 ? POS_12 : POS_3)[count] || 'ขยายความ';
-        document.getElementById('status-msg').textContent = complete ? 'เลือกครบแล้ว ตรวจสอบลำดับก่อนกดยืนยัน คุณยังแตะไพ่ที่เลือกเพื่อเปลี่ยนได้' : `ใบถัดไป: ${next} — เลือกเพิ่มอีก ${maxAllowed - count} ใบ`;
+        document.getElementById('status-msg').textContent = complete ? 'ครบแล้ว' : `ใบถัดไป: ${next}`;
         document.getElementById('confirm-selection').disabled = !complete || selectionLocked;
-        document.getElementById('confirm-help').textContent = currentMode === 12 ? 'เมื่อยืนยัน ระบบจะเปิดผลและบันทึกการใช้สิทธิ์ 12 ใบ' : 'เมื่อยืนยัน ระบบจะเปิดผลและบันทึกคำถามนี้';
-        if (isAdminSession()) document.getElementById('confirm-help').textContent = document.getElementById('admin-save-results').checked ? 'ยืนยันเพื่อเปิดไพ่และบันทึกเป็นผลทดสอบแอดมิน โดยไม่ตัดสิทธิ์เจ้าชะตา' : 'ยืนยันเพื่อเปิดผลทดสอบ โดยไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา';
         document.querySelectorAll('#card-board .card').forEach(card => {
             const index = selectedCards.indexOf(Number(card.dataset.cardId));
             card.classList.toggle('selected', index >= 0);
@@ -292,29 +287,24 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         setStage('details'); document.getElementById('flow-heading').focus();
     }
 
-    function logout() {
-        if (saveInProgress) { alert('กำลังบันทึกผล กรุณารอให้เสร็จก่อนออกจากระบบ'); return; }
-        const message = isAdminSession() ? 'ก่อนออกจากระบบ กรุณาคัดลอกผลหรือบันทึกภาพที่ต้องการเก็บ ต้องการออกจากระบบหรือไม่?' : 'ก่อนออกจากระบบ กรุณาคัดลอกผลหรือบันทึกภาพ หากใช้สิทธิ์ 12 ใบแล้วจะเข้าสู่ระบบใหม่ด้วยรหัสเดิมไม่ได้ ต้องการออกจากระบบหรือไม่?';
-        if ((selectedCards.length || currentStage === 'result') && !confirm(message)) return;
+    async function logout() {
+        if (saveInProgress || accountBusy) return;
+        if (selectedCards.length && !confirm('ออกจากระบบ?')) return;
+        await callAPI({ action: 'logout' }, false);
+        sessionToken = '';
         location.reload();
-    } 
-
-
-    function startFlow(mode) {
-        currentMode = mode; maxAllowed = mode;
-        setDialog('prayer-overlay', true);
     }
 
     function acceptPrayer() {
         setDialog('prayer-overlay', false);
-        document.getElementById('main-controls').style.display = 'none';
-        document.getElementById('card-selection-area').style.display = 'block';
-        resetReading(); backToDetails();
+        document.getElementById('prayer-button').focus();
     }
 
     function resetReading() {
         selectedCards = []; maxAllowed = currentMode; selectionLocked = false;
         lastSaveSucceeded = false;
+        requestId = crypto.randomUUID();
+        document.getElementById('card-list-details').open = false;
         document.getElementById('result-area').style.display = 'none';
         for (let i = deck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -324,12 +314,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
     function startFlow3Cards() {
         if (saveInProgress || !lastSaveSucceeded) return;
-        if (!confirm('ก่อนถามต่อ กรุณาคัดลอกผลหรือบันทึกภาพชุดปัจจุบันไว้ หน้านี้จะแสดงผลชุดใหม่แทน ต้องการถามต่อหรือไม่?')) return;
-        currentMode = 3;
-        document.getElementById('user-question-3').value = '';
-        document.getElementById('question-error').textContent = '';
-        document.getElementById('card-selection-area').style.display = 'block';
-        resetReading(); backToDetails(); window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!confirm('เริ่มคำถามใหม่?')) return;
+        startReading(3, false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function closeExtraPopup() {
@@ -394,14 +381,15 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             if (currentMode === 3 && selectedCards.length >= 3 && selectedCards.length <= 5 && EXTRA_CARD_IDS.includes(cardId)) maxAllowed++;
         }
         updateSelection();
-        if (currentMode === 3 && maxAllowed > 3) document.getElementById('status-msg').textContent = `พบไพ่พิเศษ ระบบเลือกไพ่ขยายความเพิ่มให้แล้ว รวม ${maxAllowed} ใบ กรุณายืนยันเพื่อเปิดผล`;
+        if (currentMode === 3 && maxAllowed > 3) document.getElementById('status-msg').textContent = `ไพ่ขยายความ รวม ${maxAllowed} ใบ`;
         document.getElementById('confirm-selection').focus();
     }
 
     async function showResults() {
         if (selectionLocked || currentStage !== 'select' || selectedCards.length !== maxAllowed) return;
         selectionLocked = true; saveInProgress = true; lastSaveSucceeded = false; updateSelection();
-        setAdminBusy(true);
+        document.getElementById('retry-save').hidden = true;
+        setWorkspaceBusy(true);
         document.getElementById('card-selection-area').style.display = 'none';
         const resArea = document.getElementById('result-area');
         const list = document.getElementById('selected-list'); list.innerHTML = '';
@@ -413,27 +401,43 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             const name = document.createElement('span'); name.className = 'card-highlight';
             name.textContent = `${id} ${CARD_DATA[id]}`; row.append(label, name); list.appendChild(row);
         });
+        document.getElementById('card-list-details').open = false;
         resArea.style.display = 'block'; renderVisualCards(); setStage('result');
         const saveStatus = document.getElementById('save-status');
-        saveStatus.className = 'save-status'; saveStatus.dataset.state = 'pending'; saveStatus.textContent = 'กำลังบันทึกผล กรุณารอสักครู่และอย่าปิดหน้านี้…';
-        if (isAdminSession() && !document.getElementById('admin-save-results').checked) saveStatus.textContent = 'กำลังแสดงผลทดสอบ…';
+        saveStatus.className = 'save-status'; saveStatus.dataset.state = 'pending'; saveStatus.textContent = 'กำลังบันทึก…';
         const followUp = document.getElementById('follow-up-button'); followUp.disabled = true;
         document.getElementById('result-heading').focus();
         resArea.scrollIntoView({ behavior: 'smooth' });
         try {
             const response = await saveDataToSheet();
-            if (!response.success) throw new Error('Save was not confirmed');
+            if (!response.success) throw new Error(response.code || 'SAVE_FAILED');
             lastSaveSucceeded = true; followUp.disabled = false;
+            document.getElementById('retry-save').hidden = true;
             saveStatus.className = 'save-status saved';
             saveStatus.dataset.state = response.preview ? 'preview' : 'success';
-            saveStatus.textContent = currentMode === 12 ? 'บันทึกผลสำเร็จ ใช้สิทธิ์เปิดไพ่ 12 ใบแล้ว คุณบันทึกผลและถามต่อแบบ 3 ใบในหน้านี้ได้' : 'บันทึกคำถามและผลไพ่สำเร็จ คุณบันทึกผลหรือถามคำถามถัดไปได้';
-            if (isAdminSession()) saveStatus.textContent = response.preview ? 'แสดงผลทดสอบแอดมินแล้ว โดยไม่บันทึกลงชีตและไม่ใช้สิทธิ์เจ้าชะตา คุณใช้เครื่องมือทั้งหมดหรือเริ่มไพ่ชุดใหม่ได้' : 'บันทึกผลทดสอบแอดมินสำเร็จ โดยไม่ตัดสิทธิ์เจ้าชะตา คุณถามต่อหรือเริ่มไพ่ชุดใหม่ได้';
+            saveStatus.textContent = 'บันทึกแล้ว';
         } catch (error) {
             saveStatus.className = 'save-status field-error';
             saveStatus.dataset.state = 'error';
-            saveStatus.textContent = 'ยังยืนยันการบันทึกไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพชุดนี้ แล้วติดต่อหมอวิทยาก่อนเริ่มใหม่ เพื่อป้องกันการใช้สิทธิ์หรือบันทึกซ้ำ';
-            if (isAdminSession()) saveStatus.textContent = 'ยังยืนยันการบันทึกผลทดสอบไม่ได้ กรุณาคัดลอกผลหรือบันทึกภาพไว้ก่อนเริ่มชุดใหม่';
-        } finally { saveInProgress = false; setAdminBusy(false); }
+            saveStatus.textContent = 'ยังยืนยันการบันทึกไม่ได้';
+            document.getElementById('retry-save').hidden = false;
+        } finally { saveInProgress = false; setWorkspaceBusy(false); }
+    }
+
+    async function retrySave() {
+        if (saveInProgress || lastSaveSucceeded || currentStage !== 'result') return;
+        saveInProgress = true; setWorkspaceBusy(true);
+        const button = document.getElementById('retry-save'); button.disabled = true;
+        const status = document.getElementById('save-status');
+        status.textContent = 'กำลังบันทึก…'; status.dataset.state = 'pending';
+        try {
+            const response = await saveDataToSheet();
+            if (!response.success) throw new Error(response.code || 'SAVE_FAILED');
+            lastSaveSucceeded = true; status.className = 'save-status saved'; status.dataset.state = 'success'; status.textContent = 'บันทึกแล้ว';
+            button.hidden = true; document.getElementById('follow-up-button').disabled = false;
+        } catch (error) {
+            status.className = 'save-status field-error'; status.dataset.state = 'error'; status.textContent = 'ยังยืนยันการบันทึกไม่ได้';
+        } finally { saveInProgress = false; setWorkspaceBusy(false); button.disabled = false; }
     }
 
     function filterCards(type, skipDayReset = false) {
@@ -607,9 +611,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             link.download = 'ผลการทำนาย-หมอวิทยา.png';
             link.href = canvas.toDataURL("image/png");
             link.click();
-            document.getElementById('copy-status').textContent = 'สร้างภาพผลไพ่แล้ว กรุณาตรวจดูรายการดาวน์โหลดของคุณ';
+            document.getElementById('copy-status').textContent = 'สร้างภาพแล้ว';
         } catch (error) {
-            document.getElementById('copy-status').textContent = 'บันทึกภาพไม่สำเร็จ กรุณาลองอีกครั้ง หรือใช้ปุ่มคัดลอกผลไพ่';
+            document.getElementById('copy-status').textContent = 'สร้างภาพไม่สำเร็จ';
         } finally {
             if (exportArea) exportArea.remove();
             button.disabled = false; setButtonContents(button, 'download', 'บันทึกภาพผลไพ่');
@@ -635,14 +639,12 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
             document.getElementById('copy-status').innerText = "คัดลอกผลไพ่เรียบร้อยแล้ว";
             setTimeout(() => { document.getElementById('copy-status').innerText = ""; }, 4000);
         }).catch(() => {
-            document.getElementById('copy-status').textContent = 'คัดลอกอัตโนมัติไม่สำเร็จ กรุณาเลือกและคัดลอกข้อความจากรายการไพ่ด้านบน';
+            document.getElementById('copy-status').textContent = 'คัดลอกไม่สำเร็จ';
         });
     }
 
     async function saveDataToSheet() {
-        if (isAdminSession() && !document.getElementById('admin-save-results').checked) return { success: true, preview: true };
         let typeLabel = (currentMode === 12) ? "12 ใบ" : "3 ใบ";
-        if (isAdminSession()) typeLabel = `ทดสอบแอดมิน ${typeLabel}`;
         let questionData = "";
         
         if (currentMode === 12) {
@@ -674,30 +676,25 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
         let cardIds = selectedCards.join(", ");
         const payload = {
-            action: "saveResult", username: loginUserGlobal, type: typeLabel,
+            action: "saveResult", requestId, type: typeLabel,
             question: questionData, cards: cardIds, fullPattern: fullPattern
         };
-        if (isAdminSession()) payload.fullPattern = `🧪 ผลทดสอบโดยแอดมิน\n${payload.fullPattern}`;
 
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Unable to confirm save');
-        return await response.json();
+        return await callAPI(payload, false);
     }
 
     document.getElementById('login-form').addEventListener('submit', event => { event.preventDefault(); attemptLogin(); });
     document.getElementById('show-password').addEventListener('change', event => {
         document.getElementById('login-pass').type = event.target.checked ? 'text' : 'password';
     });
-    document.getElementById('admin-save-results').addEventListener('change', () => {
-        if (isAdminSession() && currentStage === 'select') updateSelection();
-    });
     document.getElementById('user-question-3').addEventListener('input', event => {
         if (event.target.value.trim()) {
             document.getElementById('question-error').textContent = '';
             event.target.removeAttribute('aria-invalid');
         }
+    });
+    document.getElementById('account-form').addEventListener('submit', event => { event.preventDefault(); updateAccount(); });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.getElementById('account-overlay').style.display === 'flex') closeAccount();
     });
     document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = iconMarkup(element.dataset.icon); });
