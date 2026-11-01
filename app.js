@@ -14,6 +14,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         refresh: '<path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/>',
         message: '<path d="M20 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3Z"/><path d="M7 8h9M7 12h6"/>',
         download: '<path d="M12 3v12M7 10l5 5 5-5M4 16v5h16v-5"/>',
+        share: '<path d="M12 15V3M8 7l4-4 4 4M5 11v10h14V11"/>',
         eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
         'eye-off': '<path d="m3 3 18 18M10 5c7-1 12 7 12 7s-1 3-4 5M6 6c-3 2-4 6-4 6s4 7 10 7c2 0 3 0 4-1M10 10a3 3 0 0 0 4 4"/>',
         shuffle: '<path d="M3 5h3l12 14h3M17 15l4 4-4 4M3 19h3l4-5M14 9l4-4h3M17 1l4 4-4 4"/>',
@@ -40,6 +41,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     let sessionToken = '';
     let accountBusy = false;
     let requestId = '';
+    let resultImageFile = null;
+    let resultImageUrl = '';
+    let imageShareInProgress = false;
 
     function setWorkspaceBusy(busy) {
         ['home-button', 'new-12', 'new-3', 'account-button', 'logout-button', 'prayer-button'].forEach(id => {
@@ -232,6 +236,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
 
     function setStage(stage) {
         currentStage = stage;
+        document.body.classList.toggle('is-selecting', stage === 'select');
         document.getElementById('reading-home').hidden = stage !== 'home';
         document.getElementById('home-button').setAttribute('aria-pressed', String(stage === 'home'));
         document.getElementById('new-12').setAttribute('aria-pressed', String(stage !== 'home' && currentMode === 12));
@@ -303,6 +308,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     }
 
     function resetReading() {
+        releaseResultImage();
         selectedCards = []; maxAllowed = currentMode; selectionLocked = false;
         lastSaveSucceeded = false;
         requestId = crypto.randomUUID();
@@ -600,26 +606,86 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         const button = document.getElementById('btnSaveImg');
         if (button.disabled) return;
         button.disabled = true; setButtonContents(button, 'loader', 'กำลังสร้างภาพ…');
-        let exportArea;
+        let exportArea, canvas;
         try {
             if (typeof html2canvas !== 'function') throw new Error('Image exporter unavailable');
             await document.fonts.ready;
             exportArea = document.getElementById('capture-area').cloneNode(true);
+            exportArea.removeAttribute('id');
             exportArea.style.cssText = 'position:absolute;left:-10000px;top:0;width:1000px;max-width:none;padding:30px;background:white;overflow:visible;';
             document.body.appendChild(exportArea);
-            await Promise.all(Array.from(exportArea.querySelectorAll('img')).map(img => img.decode().catch(() => {})));
-            const canvas = await html2canvas(exportArea, { useCORS: true, scale: 2, backgroundColor: '#ffffff', windowWidth: 1200 });
-            const link = document.createElement('a');
-            link.download = 'ผลการทำนาย-หมอวิทยา.png';
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            document.getElementById('copy-status').textContent = 'สร้างภาพแล้ว';
+            await Promise.all(Array.from(exportArea.querySelectorAll('img')).map(img => img.decode()));
+            // Bound canvas memory for Safari; encode to Blob instead of a large data URL.
+            const scale = Math.min(2, Math.sqrt(6000000 / (1000 * Math.max(1, exportArea.scrollHeight))));
+            canvas = await html2canvas(exportArea, { useCORS: true, scale, backgroundColor: '#ffffff', windowWidth: 1200, scrollX: 0, scrollY: 0 });
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob || !blob.size) throw new Error('Image encoding failed');
+            releaseResultImage();
+            resultImageFile = new File([blob], `ผลไพ่พรหมญาณ-${currentMode}ใบ.png`, { type: 'image/png' });
+            resultImageUrl = URL.createObjectURL(resultImageFile);
+            document.getElementById('image-export-preview').src = resultImageUrl;
+            document.getElementById('image-export-open').href = resultImageUrl;
+            const canShare = canShareResultImage();
+            document.getElementById('image-export-share').hidden = !canShare;
+            const hint = document.getElementById('image-export-hint');
+            hint.hidden = !(navigator.maxTouchPoints > 0);
+            hint.textContent = canShare ? 'กดแชร์ แล้วเลือก “บันทึกภาพ” หรือแตะภาพค้างเพื่อบันทึกลงรูปภาพ' : 'แตะภาพค้าง แล้วเลือกบันทึกไปยังแอปรูปภาพ';
+            document.getElementById('image-export-status').textContent = '';
+            document.getElementById('copy-status').textContent = '';
+            setDialog('image-export-overlay', true);
+            document.getElementById('image-export-title').focus();
         } catch (error) {
             document.getElementById('copy-status').textContent = 'สร้างภาพไม่สำเร็จ';
         } finally {
             if (exportArea) exportArea.remove();
+            if (canvas) { canvas.width = 0; canvas.height = 0; }
             button.disabled = false; setButtonContents(button, 'download', 'บันทึกภาพผลไพ่');
         }
+    }
+
+    function canShareResultImage() {
+        if (!resultImageFile || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') return false;
+        try { return navigator.canShare({ files: [resultImageFile] }); } catch (error) { return false; }
+    }
+
+    async function shareResultImage() {
+        if (imageShareInProgress || !canShareResultImage()) return;
+        imageShareInProgress = true;
+        const button = document.getElementById('image-export-share');
+        button.disabled = true;
+        document.getElementById('image-export-close').disabled = true;
+        const status = document.getElementById('image-export-status'); status.textContent = '';
+        try {
+            // No image generation or other awaited work before share: this tap must
+            // retain transient user activation on iPadOS, including Home Screen mode.
+            await navigator.share({ files: [resultImageFile] });
+        } catch (error) {
+            if (error.name !== 'AbortError') status.textContent = 'เปิดเมนูแชร์ไม่สำเร็จ ใช้ปุ่มดาวน์โหลดหรือแตะภาพค้างเพื่อบันทึก';
+        } finally {
+            imageShareInProgress = false; button.disabled = false;
+            document.getElementById('image-export-close').disabled = false;
+        }
+    }
+
+    function downloadResultImage() {
+        if (!resultImageFile || !resultImageUrl) return;
+        const link = document.createElement('a');
+        link.download = resultImageFile.name; link.href = resultImageUrl;
+        document.body.appendChild(link); link.click(); link.remove();
+        document.getElementById('image-export-status').textContent = 'เริ่มดาวน์โหลดภาพแล้ว';
+    }
+
+    function releaseResultImage() {
+        if (resultImageUrl) URL.revokeObjectURL(resultImageUrl);
+        resultImageUrl = ''; resultImageFile = null;
+        document.getElementById('image-export-preview').removeAttribute('src');
+        document.getElementById('image-export-open').removeAttribute('href');
+    }
+
+    function closeImagePreview() {
+        if (imageShareInProgress) return;
+        setDialog('image-export-overlay', false); releaseResultImage();
+        document.getElementById('btnSaveImg').focus();
     }
 
     function copyResult() {
@@ -698,5 +764,6 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
     document.getElementById('account-form').addEventListener('submit', event => { event.preventDefault(); updateAccount(); });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && document.getElementById('account-overlay').style.display === 'flex') closeAccount();
+        if (event.key === 'Escape' && document.getElementById('image-export-overlay').style.display === 'flex') closeImagePreview();
     });
     document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = iconMarkup(element.dataset.icon); });

@@ -2,12 +2,22 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1b4d3e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="หมอวิทยา ธรรมนาย">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261101-3">
+    <link rel="apple-touch-icon" sizes="167x167" href="assets/app-icon-167.png?v=20261101-3">
+    <link rel="apple-touch-icon" sizes="152x152" href="assets/app-icon-152.png?v=20261101-3">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/app-icon-32.png?v=20261101-3">
+    <link rel="manifest" href="site.webmanifest?v=20261101-3">
     <title>เปิดไพ่พรหมญาณ | หมอวิทยา ธรรมนาย</title>
 
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-    <link rel="stylesheet" href="styles.css?v=20261101-2">
+    <link rel="stylesheet" href="styles.css?v=20261101-3">
 </head>
 <body>
 
@@ -59,6 +69,20 @@
                 <p id="account-status" class="feedback-message" role="status" aria-live="polite"></p>
                 <button id="account-save" type="submit" class="button button-primary"><span class="ui-icon" data-icon="check" aria-hidden="true"></span><span>บันทึก</span></button>
             </form>
+        </div>
+    </div>
+
+    <div id="image-export-overlay" role="dialog" aria-modal="true" aria-labelledby="image-export-title">
+        <div class="image-export-box">
+            <div class="image-export-header"><h3 id="image-export-title" tabindex="-1">บันทึกภาพผลไพ่</h3><button id="image-export-close" type="button" class="button button-text" onclick="closeImagePreview()">ปิด</button></div>
+            <div class="image-export-actions">
+                <button id="image-export-share" type="button" class="button button-primary" onclick="shareResultImage()" hidden><span class="ui-icon" data-icon="share" aria-hidden="true"></span><span>แชร์ / บันทึกภาพ</span></button>
+                <button id="image-export-download" type="button" class="button button-secondary" onclick="downloadResultImage()"><span class="ui-icon" data-icon="download" aria-hidden="true"></span><span>ดาวน์โหลดภาพ</span></button>
+                <a id="image-export-open" class="button button-secondary" target="_blank" rel="noopener">เปิดภาพเต็ม</a>
+            </div>
+            <p id="image-export-hint" class="image-export-hint" hidden></p>
+            <p id="image-export-status" class="feedback-message" role="status" aria-live="polite"></p>
+            <div class="image-export-preview"><img id="image-export-preview" alt="ภาพผลไพ่สำหรับบันทึกหรือแชร์"></div>
         </div>
     </div>
 
@@ -174,6 +198,6 @@
     </div>
 </div>
 
-<script src="app.js?v=20261101-2" defer></script>
+<script src="app.js?v=20261101-3" defer></script>
 </body>
 </html>

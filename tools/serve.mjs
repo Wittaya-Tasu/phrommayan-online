@@ -9,7 +9,7 @@ const port = Number(process.env.PHROMMAYAN_PORT || 4173);
 let qaAccount = { username: 'qa-owner', password: 'local-test-only' };
 let qaToken = '';
 const qaResults = new Set();
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.json': 'application/json; charset=utf-8' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.json': 'application/json; charset=utf-8' };
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   if (mock && url.pathname === '/__qa_api' && req.method === 'POST') {

@@ -31,6 +31,7 @@ function setup(saveResponse = { success: true }, loginRole = 'owner', initialize
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const [, id] of html.matchAll(/id="([^"]+)"/g)) elements.set(id, new Element());
   const document = {
+    body: new Element(),
     addEventListener() {},
     getElementById: id => { assert.ok(elements.has(id), `Element exists: ${id}`); return elements.get(id); },
     createElement: () => new Element(),

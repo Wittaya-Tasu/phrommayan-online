@@ -247,6 +247,16 @@ body { padding: 16px 24px; }
 .account-box input { width: 100%; }
 #account-status:empty { display: none; }
 #account-save { margin-top: 20px; width: 100%; }
+#image-export-overlay { position: fixed; inset: 0; z-index: 1100; display: none; align-items: center; justify-content: center; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: rgba(16,34,26,.86); }
+.image-export-box { display: flex; flex-direction: column; width: min(1100px, 100%); height: min(94dvh, 1600px); min-height: 0; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); text-align: left; }
+.image-export-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.image-export-header h3 { margin: 0; }
+.image-export-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.image-export-hint { margin: 0 0 12px; color: var(--muted); font-size: 1rem; }
+#image-export-status { margin: 0 0 12px; }
+#image-export-status:empty { display: none; }
+.image-export-preview { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--ivory); overscroll-behavior: contain; }
+.image-export-preview img { display: block; max-width: 100%; height: auto; margin: 0 auto; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
 @media (min-width: 1720px) { .grid-container { grid-template-columns: repeat(12, minmax(0,1fr)); } }
 @media (max-width: 1200px) {
   body { padding: 12px 16px; }
@@ -265,6 +275,31 @@ body { padding: 16px 24px; }
   .result-actions { gap: 6px; }
   .result-actions .button { padding: 10px 12px; font-size: .95rem; }
   .result-item { grid-template-columns: 128px minmax(0,1fr); gap: 8px; }
+}
+/* Ten columns × seven rows: every card and the controls stay in the portrait
+   iPad viewport, including Safari's variable browser bars and standalone mode. */
+@media (min-width: 760px) and (max-width: 1400px) and (min-height: 850px) and (orientation: portrait) {
+  body.is-selecting { height: 100vh; height: 100dvh; overflow: hidden; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  body.is-selecting #tarot-view { height: 100%; }
+  body.is-selecting #tarot-content { display: flex; flex-direction: column; height: 100%; min-height: 0; width: 100%; max-width: none; margin: 0; padding: 12px; border-radius: 16px; }
+  body.is-selecting #tarot-content > .no-print { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  body.is-selecting .app-header { display: none; }
+  body.is-selecting .flow-heading { flex: 0 0 auto; margin: 0 0 6px; font-size: 1.35rem; line-height: 1.4; }
+  body.is-selecting #card-selection-area, body.is-selecting #selection-tools { display: flex !important; flex-direction: column; flex: 1; min-height: 0; }
+  body.is-selecting .selection-guide { display: flex; align-items: center; gap: 16px; min-height: 30px; padding: 0; margin: 0; border: 0; background: transparent; }
+  body.is-selecting .selection-count { flex: 0 0 auto; margin: 0; font-size: 1.15rem; white-space: nowrap; }
+  body.is-selecting .selection-progress { flex: 1; height: 6px; }
+  body.is-selecting #status-msg { flex: 0 0 auto; margin: 4px 0; font-size: 1rem; line-height: 1.4; }
+  body.is-selecting .action-buttons { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; margin: 4px 0 8px; }
+  body.is-selecting .action-buttons .button { min-height: 44px; padding: 8px 14px; font-size: .95rem; }
+  body.is-selecting .grid-container { flex: 1; min-height: 0; grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 8px; border-radius: 12px; }
+  body.is-selecting .grid-container .card { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; border-radius: 7px; }
+  body.is-selecting .card-bg-number { font-size: clamp(18px, 2.1dvh, 27px); }
+  body.is-selecting .grid-container .card.selected { font-size: clamp(32px, 4.5dvh, 57.6px); }
+  body.is-selecting .grid-container .card.selected.latest-picked { font-size: clamp(40px, 5.3dvh, 67.2px); }
+  body.is-selecting .confirm-bar { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 8px; padding: 8px 0 0; border: 0; }
+  body.is-selecting .confirm-bar .button { min-height: 44px; padding: 9px 18px; font-size: 1rem; }
+  body.is-selecting .confirm-bar .button + .button { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 @media print {
