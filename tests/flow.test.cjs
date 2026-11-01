@@ -96,6 +96,10 @@ test('home offers direct three-card and twelve-card starts', () => {
   state.run('showHome(); startReading(12)');
   assert.equal(state.run('currentMode'), 12);
   assert.equal(state.elements.get('user-info-12').style.display, 'block');
+  state.run('showHome()');
+  assert.equal(state.elements.get('home-button').attributes['aria-pressed'], 'true');
+  assert.equal(state.elements.get('new-12').attributes['aria-pressed'], 'false');
+  assert.equal(state.elements.get('new-3').attributes['aria-pressed'], 'false');
 });
 
 test('legacy client and admin roles cannot enter the owner workspace', async () => {

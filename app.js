@@ -234,6 +234,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwksf1Xka-AES0ym0TGd
         currentStage = stage;
         document.getElementById('reading-home').hidden = stage !== 'home';
         document.getElementById('home-button').setAttribute('aria-pressed', String(stage === 'home'));
+        document.getElementById('new-12').setAttribute('aria-pressed', String(stage !== 'home' && currentMode === 12));
+        document.getElementById('new-3').setAttribute('aria-pressed', String(stage !== 'home' && currentMode === 3));
         const names = { details: `เปิดไพ่ ${currentMode} ใบ`, select: `เลือกไพ่ ${currentMode} ใบ`, result: 'ผลไพ่' };
         document.getElementById('flow-heading').textContent = names[stage] || 'เปิดไพ่';
         document.getElementById('flow-heading').hidden = stage === 'result' || stage === 'home';
